@@ -101,7 +101,7 @@
       <div class="text-effect font-extrabold text-xl tracking-tight text-center">
         IPA Editor
       </div>
-      <div class="w-10"></div> <!-- Spacer for balance -->
+      <div class="w-10"></div>
     </div>
   </header>
 
@@ -110,7 +110,7 @@
 
     <!-- Hero Title -->
     <div class="text-center space-y-2 mt-2">
-      <h1 class="text-4xl md:text-5xl font-black text-effect tracking-tight">iOS Package Studio</h1>
+      <h1 class="text-4xl md:text-5xl font-black text-effect tracking-tight">IPA Editor</h1>
       <p class="text-slate-800 font-bold max-w-2xl mx-auto text-sm md:text-base">
         Extract IPAs, edit metadata, replace icons, and customize splash screens with instant client-side repacking.
       </p>
@@ -143,7 +143,7 @@
                   Change Icon
                 </div>
               </div>
-              <input type="file" id="icon-input" accept="image/png,image/jpeg" class="hidden" onchange="handleIconChange(event)">
+              <input type="file" id="icon-input" accept="image/png,image/jpeg" class="hidden" onchange="prepareIconCrop(event)">
               <span class="text-[11px] font-bold text-sky-600">Click preview to replace</span>
             </div>
 
@@ -209,7 +209,7 @@
                 + Add 3.5" Boot Screen Slot (iPhone 4 / Legacy)
               </button>
             </div>
-            <input type="file" id="launch-screen-file-input" accept="image/png,image/jpeg" class="hidden" onchange="handleLaunchScreenFileSelect(event)">
+            <input type="file" id="launch-screen-file-input" accept="image/png,image/jpeg" class="hidden" onchange="prepareSplashCrop(event)">
           </div>
 
           <!-- Save Button -->
@@ -225,6 +225,29 @@
 
   </main>
 
+  <!-- IMAGE CROPPER MODAL -->
+  <div id="cropper-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white/95 border-2 border-pink-300 rounded-3xl p-6 max-w-md w-full shadow-2xl flex flex-col items-center space-y-4">
+      <div class="text-center">
+        <h3 id="cropper-title" class="text-lg font-black text-sky-700">Crop Image</h3>
+        <p class="text-xs font-semibold text-slate-500">Drag or pinch/swipe inside the frame to adjust crop area.</p>
+      </div>
+
+      <div class="relative overflow-hidden rounded-2xl border-2 border-slate-300 bg-slate-900 shadow-inner w-[300px] h-[300px] flex items-center justify-center touch-none" id="crop-viewport-container">
+        <canvas id="crop-canvas" width="300" height="300" class="cursor-grab active:cursor-grabbing"></canvas>
+      </div>
+
+      <div class="flex items-center space-x-3 w-full justify-center">
+        <button type="button" onclick="closeCropper()" class="px-5 py-2.5 bg-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-300 transition-all">
+          Cancel
+        </button>
+        <button type="button" onclick="confirmCrop()" class="btn-gradient px-6 py-2.5 font-black text-xs rounded-xl shadow-md">
+          Crop & Save
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Footer -->
   <footer class="py-4 text-center text-xs font-bold text-slate-600">
     <span class="text-effect">IPA Editor</span> • Built for iOS Application Editing
@@ -233,20 +256,19 @@
   <!-- Application Logic -->
   <script>
     const CORE_LAUNCH_CATEGORIES = [
-      { id: 'ipad_port', name: 'iPad Portrait', sub: '768x1024 / 1536x2048', match: /Default-Portrait.*\.png$/i },
-      { id: 'ipad_land', name: 'iPad Landscape', sub: '1024x768 / 2048x1536', match: /Default-Landscape.*\.png$/i },
-      { id: 'iphone_4in', name: 'iPhone 4" Retina', sub: '640x1136 (568h)', match: /Default-568h@2x.*\.png$/i },
-      { id: 'iphone_47in', name: 'iPhone 4.7"', sub: '750x1334 (667h)', match: /(Default|LaunchImage).*667h.*\.png$/i },
-      { id: 'iphone_55in_port', name: 'iPhone 5.5" Portrait', sub: '1242x2208 (736h)', match: /(Default|LaunchImage).*(Portrait)?.*736h.*\.png$/i },
-      { id: 'iphone_55in_land', name: 'iPhone 5.5" Landscape', sub: '2208x1242 (736h)', match: /(Default|LaunchImage).*Landscape.*736h.*\.png$/i }
+      { id: 'ipad_port', name: 'iPad Portrait', sub: '768x1024 / 1536x2048', match: /Default-Portrait.*\.png$/i, aspect: 3/4 },
+      { id: 'ipad_land', name: 'iPad Landscape', sub: '1024x768 / 2048x1536', match: /Default-Landscape.*\.png$/i, aspect: 4/3 },
+      { id: 'iphone_4in', name: 'iPhone 4" Retina', sub: '640x1136 (568h)', match: /Default-568h@2x.*\.png$/i, aspect: 640/1136 },
+      { id: 'iphone_47in', name: 'iPhone 4.7"', sub: '750x1334 (667h)', match: /(Default|LaunchImage).*667h.*\.png$/i, aspect: 750/1334 },
+      { id: 'iphone_55in_port', name: 'iPhone 5.5" Portrait', sub: '1242x2208 (736h)', match: /(Default|LaunchImage).*(Portrait)?.*736h.*\.png$/i, aspect: 1242/2208 },
+      { id: 'iphone_55in_land', name: 'iPhone 5.5" Landscape', sub: '2208x1242 (736h)', match: /(Default|LaunchImage).*Landscape.*736h.*\.png$/i, aspect: 2208/1242 }
     ];
-    const OPTIONAL_35_CATEGORY = { id: 'iphone_35in', name: 'iPhone 3.5" (Legacy)', sub: '320x480 / 640x960', match: /Default(@2x)?\.png$/i };
+    const OPTIONAL_35_CATEGORY = { id: 'iphone_35in', name: 'iPhone 3.5" (Legacy)', sub: '320x480 / 640x960', match: /Default(@2x)?\.png$/i, aspect: 320/480 };
 
     let currentZip = null;
     let plistObj = {};
     let plistPath = null;
     let mainExecPath = null;
-    let uploadedImageElement = null;
     let explicitIconTargetFiles = [];
     let detectedLaunchFiles = [];
     let activeCategories = [];
@@ -254,13 +276,25 @@
     let categoryReplacements = {};
     let is35SlotAdded = false;
     let allZipFiles = [];
+    let uploadedIconImage = null;
+
+    let cropTargetType = null;
+    let cropImageObj = new Image();
+    let cropAspect = 1.0;
+    let cropScale = 1.0;
+    let cropOffsetX = 0;
+    let cropOffsetY = 0;
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let initialPinchDist = null;
 
     function resetAppState() {
       currentZip = null;
       plistObj = {};
       plistPath = null;
       mainExecPath = null;
-      uploadedImageElement = null;
+      uploadedIconImage = null;
       explicitIconTargetFiles = [];
       detectedLaunchFiles = [];
       activeCategories = [];
@@ -295,7 +329,6 @@
 
     async function detectBinaryArchitecture(appPrefix, executableName) {
       let zipEntry = null;
-
       if (executableName) {
         zipEntry = currentZip.file(appPrefix + executableName);
         if (zipEntry) mainExecPath = appPrefix + executableName;
@@ -331,7 +364,6 @@
         if (magicBE === 0xCAFEBABE || magicLE === 0xCAFEBABE || magicBE === 0xBABEFACA) {
           const numArchitectures = view.getUint32(4, false);
           let archs = new Set();
-          
           let offset = 8;
           for (let i = 0; i < numArchitectures && (offset + 20) <= headerUint8.length; i++) {
             const cpuType = view.getInt32(offset, false);
@@ -339,12 +371,8 @@
             if (cpuType === 16777228 || cpuType === 16777223 || cpuType === 0x0100000C || cpuType === 0x01000007) archs.add("64-bit");
             offset += 20;
           }
-
-          if (archs.has("32-bit") && archs.has("64-bit")) {
-            return "Universal (32 & 64)";
-          } else if (archs.size > 0) {
-            return Array.from(archs).join(" & ");
-          }
+          if (archs.has("32-bit") && archs.has("64-bit")) return "Universal (32 & 64)";
+          else if (archs.size > 0) return Array.from(archs).join(" & ");
           return "Universal";
         }
 
@@ -353,7 +381,6 @@
       } catch (err) {
         console.warn("Arch detection fallback:", err);
       }
-
       return "32-bit";
     }
 
@@ -383,7 +410,6 @@
         }
         return '<string></string>';
       }
-
       return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -394,7 +420,6 @@ ${serializeValue(obj)}
     function parseXmlPlist(xmlString) {
       const parser = new DOMParser();
       const xmlDoc = parser.parseFromString(xmlString, "text/xml");
-      
       function nodeToValue(node) {
         if (!node) return null;
         const tag = node.tagName;
@@ -402,28 +427,17 @@ ${serializeValue(obj)}
           const res = {};
           let currentKey = null;
           for (let child of node.children) {
-            if (child.tagName === 'key') {
-              currentKey = child.textContent.trim();
-            } else if (currentKey) {
-              res[currentKey] = nodeToValue(child);
-              currentKey = null;
-            }
+            if (child.tagName === 'key') currentKey = child.textContent.trim();
+            else if (currentKey) { res[currentKey] = nodeToValue(child); currentKey = null; }
           }
           return res;
-        } else if (tag === 'array') {
-          return Array.from(node.children).map(nodeToValue);
-        } else if (tag === 'string') {
-          return node.textContent;
-        } else if (tag === 'true') {
-          return true;
-        } else if (tag === 'false') {
-          return false;
-        } else if (tag === 'integer' || tag === 'real') {
-          return Number(node.textContent);
-        }
+        } else if (tag === 'array') return Array.from(node.children).map(nodeToValue);
+        else if (tag === 'string') return node.textContent;
+        else if (tag === 'true') return true;
+        else if (tag === 'false') return false;
+        else if (tag === 'integer' || tag === 'real') return Number(node.textContent);
         return node.textContent;
       }
-
       const rootDict = xmlDoc.querySelector('plist > dict');
       return rootDict ? nodeToValue(rootDict) : {};
     }
@@ -437,9 +451,7 @@ ${serializeValue(obj)}
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(imgElement, 0, 0, width, height);
-        canvas.toBlob((blob) => {
-          blob.arrayBuffer().then(resolve);
-        }, 'image/png');
+        canvas.toBlob((blob) => { blob.arrayBuffer().then(resolve); }, 'image/png');
       });
     }
 
@@ -457,18 +469,13 @@ ${serializeValue(obj)}
         
         let foundPath = null;
         currentZip.forEach((relativePath, fileEntry) => {
-          if (!fileEntry.dir) {
-            allZipFiles.push({ path: relativePath, entry: fileEntry });
-          }
+          if (!fileEntry.dir) allZipFiles.push({ path: relativePath, entry: fileEntry });
           if (relativePath.match(/Info\.plist$/i) && relativePath.includes('.app/')) {
-            if (!foundPath || relativePath.length < foundPath.length) {
-              foundPath = relativePath;
-            }
+            if (!foundPath || relativePath.length < foundPath.length) foundPath = relativePath;
           }
         });
 
         if (!foundPath) throw new Error("Could not find any Info.plist inside the app bundle.");
-
         plistPath = foundPath;
         const plistUint8 = await currentZip.file(plistPath).async("uint8array");
 
@@ -477,17 +484,13 @@ ${serializeValue(obj)}
             const parsed = bplistParser.parseBuffer(plistUint8);
             if (parsed && parsed.length > 0) plistObj = parsed[0];
           }
-        } catch (bpErr) {
-          console.warn("bplist parse failed, fallback to XML parser");
-        }
+        } catch (bpErr) {}
 
         if (!plistObj || Object.keys(plistObj).length === 0) {
           try {
             const decoder = new TextDecoder("utf-8");
             plistObj = parseXmlPlist(decoder.decode(plistUint8));
-          } catch (xmlErr) {
-            console.warn("XML parse failed");
-          }
+          } catch (xmlErr) {}
         }
 
         if (!plistObj || typeof plistObj !== 'object') plistObj = {};
@@ -500,10 +503,8 @@ ${serializeValue(obj)}
         document.getElementById('min-ios-version').value = plistObj.MinimumOSVersion || "6.0";
 
         const appPrefix = plistPath.substring(0, plistPath.lastIndexOf('Info.plist'));
-
         const archType = await detectBinaryArchitecture(appPrefix, plistObj.CFBundleExecutable);
-        const badgeEl = document.getElementById('arch-badge');
-        badgeEl.innerText = archType;
+        document.getElementById('arch-badge').innerText = archType;
 
         let plistIconNames = [];
         const extractPlistIcons = (dict) => {
@@ -516,20 +517,14 @@ ${serializeValue(obj)}
         };
         extractPlistIcons(plistObj.CFBundleIcons);
         extractPlistIcons(plistObj['CFBundleIcons~ipad']);
-        if (Array.isArray(plistObj.CFBundleIconFiles)) {
-          plistObj.CFBundleIconFiles.forEach(f => plistIconNames.push(f));
-        }
+        if (Array.isArray(plistObj.CFBundleIconFiles)) plistObj.CFBundleIconFiles.forEach(f => plistIconNames.push(f));
 
         currentZip.forEach((relativePath) => {
           const fileName = relativePath.replace(appPrefix, '');
           if (relativePath.startsWith(appPrefix)) {
             let isDeclaredIcon = plistIconNames.some(name => fileName.includes(name));
             let isClassicAppIcon = fileName.match(/^(Icon(@2x|~ipad)?|AppIcon.*)\.png$/i);
-
-            if ((isDeclaredIcon || isClassicAppIcon) && !fileName.includes('framework')) {
-              explicitIconTargetFiles.push(fileName);
-            }
-
+            if ((isDeclaredIcon || isClassicAppIcon) && !fileName.includes('framework')) explicitIconTargetFiles.push(fileName);
             if (fileName.match(/Default.*\.png$/i) || fileName.match(/LaunchImage.*\.png$/i) || fileName.match(/splash.*\.png$/i)) {
               detectedLaunchFiles.push({ fullPath: relativePath, name: fileName });
             }
@@ -543,20 +538,15 @@ ${serializeValue(obj)}
             break;
           }
         }
-        if (!iconThumbEntry && explicitIconTargetFiles.length > 0) {
-          iconThumbEntry = currentZip.file(appPrefix + explicitIconTargetFiles[0]);
-        }
-
+        if (!iconThumbEntry && explicitIconTargetFiles.length > 0) iconThumbEntry = currentZip.file(appPrefix + explicitIconTargetFiles[0]);
         if (iconThumbEntry) {
           const srcUrl = await getSafePreviewDataUrl(iconThumbEntry);
           if (srcUrl) document.getElementById('app-icon').src = srcUrl;
         }
 
         renderLaunchScreenGrid();
-
         document.getElementById('loader').classList.add('hidden');
         document.getElementById('workspace').classList.remove('hidden');
-
       } catch (err) {
         alert("Error loading IPA: " + err.message);
         document.getElementById('loader').classList.add('hidden');
@@ -617,35 +607,211 @@ ${serializeValue(obj)}
       document.getElementById('launch-screen-file-input').click();
     }
 
-    function handleLaunchScreenFileSelect(event) {
+    function prepareIconCrop(event) {
       const file = event.target.files[0];
-      if (file && selectedCategoryTarget) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          document.getElementById('launch-preview-' + selectedCategoryTarget).src = e.target.result;
-          const img = new Image();
-          img.src = e.target.result;
-          img.onload = () => { categoryReplacements[selectedCategoryTarget] = img; };
-        };
-        reader.readAsDataURL(file);
-      }
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        openCropper('icon', e.target.result, 1.0, "Crop App Icon");
+      };
+      reader.readAsDataURL(file);
+      event.target.value = '';
     }
 
-    function handleIconChange(event) {
+    function prepareSplashCrop(event) {
       const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          document.getElementById('app-icon').src = e.target.result;
-          const img = new Image();
-          img.src = e.target.result;
-          img.onload = () => { uploadedImageElement = img; };
-        };
-        reader.readAsDataURL(file);
-      }
+      if (!file || !selectedCategoryTarget) return;
+
+      let targetCat = CORE_LAUNCH_CATEGORIES.find(c => c.id === selectedCategoryTarget);
+      if (!targetCat && selectedCategoryTarget === 'iphone_35in') targetCat = OPTIONAL_35_CATEGORY;
+      const aspect = targetCat ? targetCat.aspect : (9/16);
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        openCropper('splash', e.target.result, aspect, `Crop ${targetCat ? targetCat.name : 'Splash Screen'}`);
+      };
+      reader.readAsDataURL(file);
+      event.target.value = '';
     }
 
-    // Form Submit Handler (Export & Re-compile IPA)
+    function openCropper(type, dataUrl, aspect, titleText) {
+      cropTargetType = type;
+      cropAspect = aspect;
+      document.getElementById('cropper-title').innerText = titleText;
+
+      cropImageObj.onload = function() {
+        cropScale = Math.max(300 / cropImageObj.width, 300 / (cropImageObj.width * cropAspect));
+        cropOffsetX = (300 - cropImageObj.width * cropScale) / 2;
+        cropOffsetY = (300 - (cropImageObj.width * cropAspect) * cropScale) / 2;
+        
+        document.getElementById('cropper-modal').classList.remove('hidden');
+        drawCropper();
+      };
+      cropImageObj.src = dataUrl;
+    }
+
+    function closeCropper() {
+      document.getElementById('cropper-modal').classList.add('hidden');
+    }
+
+    function drawCropper() {
+      const canvas = document.getElementById('crop-canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, 300, 300);
+
+      ctx.save();
+      ctx.translate(cropOffsetX, cropOffsetY);
+      ctx.scale(cropScale, cropScale);
+      ctx.drawImage(cropImageObj, 0, 0);
+      ctx.restore();
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.6)';
+      ctx.fillRect(0, 0, 300, 300);
+
+      let boxW = 260;
+      let boxH = boxW / cropAspect;
+      if (boxH > 260) {
+        boxH = 260;
+        boxW = boxH * cropAspect;
+      }
+      const boxX = (300 - boxW) / 2;
+      const boxY = (300 - boxH) / 2;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(boxX, boxY, boxW, boxH);
+      ctx.clip();
+      ctx.clearRect(0, 0, 300, 300);
+
+      ctx.translate(cropOffsetX, cropOffsetY);
+      ctx.scale(cropScale, cropScale);
+      ctx.drawImage(cropImageObj, 0, 0);
+      ctx.restore();
+
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2.5;
+      ctx.strokeRect(boxX, boxY, boxW, boxH);
+
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(boxX + boxW / 3, boxY); ctx.lineTo(boxX + boxW / 3, boxY + boxH);
+      ctx.moveTo(boxX + (boxW * 2) / 3, boxY); ctx.lineTo(boxX + (boxW * 2) / 3, boxY + boxH);
+      ctx.moveTo(boxX, boxY + boxH / 3); ctx.lineTo(boxX + boxW, boxY + boxH / 3);
+      ctx.moveTo(boxX, boxY + (boxH * 2) / 3); ctx.lineTo(boxX + boxW, boxY + (boxH * 2) / 3);
+      ctx.stroke();
+    }
+
+    const cropCanvasEl = document.getElementById('crop-canvas');
+
+    cropCanvasEl.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      dragStartX = e.clientX - cropOffsetX;
+      dragStartY = e.clientY - cropOffsetY;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      cropOffsetX = e.clientX - dragStartX;
+      cropOffsetY = e.clientY - dragStartY;
+      drawCropper();
+    });
+
+    window.addEventListener('mouseup', () => { isDragging = false; });
+
+    cropCanvasEl.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        isDragging = true;
+        dragStartX = e.touches[0].clientX - cropOffsetX;
+        dragStartY = e.touches[0].clientY - cropOffsetY;
+      } else if (e.touches.length === 2) {
+        initialPinchDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+      }
+    });
+
+    cropCanvasEl.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 1 && isDragging) {
+        cropOffsetX = e.touches[0].clientX - cropOffsetX; // Corrected offset mapping
+        cropOffsetX = e.touches[0].clientX - dragStartX;
+        cropOffsetY = e.touches[0].clientY - dragStartY;
+        drawCropper();
+      } else if (e.touches.length === 2 && initialPinchDist) {
+        const currentDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        const factor = currentDist / initialPinchDist;
+        cropScale *= factor;
+        initialPinchDist = currentDist;
+        drawCropper();
+      }
+      e.preventDefault();
+    }, { passive: false });
+
+    cropCanvasEl.addEventListener('touchend', () => {
+      isDragging = false;
+      initialPinchDist = null;
+    });
+
+    cropCanvasEl.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+      cropScale *= zoomFactor;
+      drawCropper();
+    }, { passive: false });
+
+    function confirmCrop() {
+      let boxW = 260;
+      let boxH = boxW / cropAspect;
+      if (boxH > 260) { boxH = 260; boxW = boxH * cropAspect; }
+      const boxX = (300 - boxW) / 2;
+      const boxY = (300 - boxH) / 2;
+
+      const exportCanvas = document.createElement('canvas');
+      let outW = cropTargetType === 'icon' ? 180 : 750;
+      let outH = Math.round(outW / cropAspect);
+      if (cropTargetType === 'splash') {
+        if (selectedCategoryTarget === 'ipad_port') { outW = 1536; outH = 2048; }
+        else if (selectedCategoryTarget === 'ipad_land') { outW = 2048; outH = 1536; }
+        else if (selectedCategoryTarget === 'iphone_4in') { outW = 640; outH = 1136; }
+        else if (selectedCategoryTarget === 'iphone_47in') { outW = 750; outH = 1334; }
+        else if (selectedCategoryTarget === 'iphone_55in_port') { outW = 1242; outH = 2208; }
+        else if (selectedCategoryTarget === 'iphone_55in_land') { outW = 2208; outH = 1242; }
+      }
+
+      exportCanvas.width = outW;
+      exportCanvas.height = outH;
+      const eCtx = exportCanvas.getContext('2d');
+      eCtx.imageSmoothingEnabled = true;
+      eCtx.imageSmoothingQuality = 'high';
+
+      const srcX = (boxX - cropOffsetX) / cropScale;
+      const srcY = (boxY - cropOffsetY) / cropScale;
+      const srcW = boxW / cropScale;
+      const srcH = boxH / cropScale;
+
+      eCtx.drawImage(cropImageObj, srcX, srcY, srcW, srcH, 0, 0, outW, outH);
+
+      const dataUrl = exportCanvas.toDataURL('image/png');
+
+      if (cropTargetType === 'icon') {
+        document.getElementById('app-icon').src = dataUrl;
+        const img = new Image();
+        img.src = dataUrl;
+        img.onload = () => { uploadedIconImage = img; };
+      } else if (cropTargetType === 'splash' && selectedCategoryTarget) {
+        document.getElementById('launch-preview-' + selectedCategoryTarget).src = dataUrl;
+        const img = new Image();
+        img.src = dataUrl;
+        img.onload = () => { categoryReplacements[selectedCategoryTarget] = img; };
+      }
+
+      closeCropper();
+    }
+
     async function handleFormSubmit(event) {
       event.preventDefault();
       if (!currentZip || !plistPath) {
@@ -668,8 +834,7 @@ ${serializeValue(obj)}
 
         const appPrefix = plistPath.substring(0, plistPath.lastIndexOf('Info.plist'));
 
-        // Re-scale & Patch App Icons
-        if (uploadedImageElement && explicitIconTargetFiles.length > 0) {
+        if (uploadedIconImage && explicitIconTargetFiles.length > 0) {
           for (const iconFile of explicitIconTargetFiles) {
             let dim = 120;
             if (iconFile.includes('152x152')) dim = 152;
@@ -678,12 +843,11 @@ ${serializeValue(obj)}
             else if (iconFile.includes('76x76')) dim = 76;
             else if (iconFile.includes('57x57') || iconFile.includes('Icon.png')) dim = 57;
 
-            const blobBuffer = await resizeImageToBlob(uploadedImageElement, dim, dim);
+            const blobBuffer = await resizeImageToBlob(uploadedIconImage, dim, dim);
             currentZip.file(appPrefix + iconFile, blobBuffer);
           }
         }
 
-        // Re-scale & Patch Boot / Splash Screens
         for (const catTargetId in categoryReplacements) {
           const imgObj = categoryReplacements[catTargetId];
           const matchedCategoryObj = activeCategories.find(c => c.category.id === catTargetId);
@@ -706,7 +870,6 @@ ${serializeValue(obj)}
           }
         }
 
-        // Generate and Download modified IPA
         const repackedBlob = await currentZip.generateAsync({ type: "blob", mimeType: "application/octet-stream" });
         const downloadUrl = URL.createObjectURL(repackedBlob);
         const a = document.createElement('a');
