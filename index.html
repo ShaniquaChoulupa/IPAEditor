@@ -4,8 +4,10 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IPA Editor</title>
+  <title>EditIPA Studio - iOS Application Package Editor</title>
 
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
   <!-- JSZip for IPA Extraction & Repacking -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <!-- bplist-parser for reading Binary Plists -->
@@ -16,11 +18,6 @@
       0% { background-position: 0% 50%; }
       50% { background-position: 100% 50%; }
       100% { background-position: 0% 50%; }
-    }
-
-    @keyframes pulseGlow {
-      0%, 100% { filter: drop-shadow(0 0 15px rgba(244, 114, 182, 0.4)); }
-      50% { filter: drop-shadow(0 0 25px rgba(56, 189, 248, 0.6)); }
     }
 
     @keyframes loader-rotate {
@@ -34,44 +31,16 @@
       color: #1e293b;
       width: 100%;
       min-height: 100vh;
-      font-family: Poppins, ui-sans-serif, system-ui, -apple-system, sans-serif;
+      font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
       margin: 0;
     }
 
-    header {
-      margin-bottom: 2rem;
-      display: flex;
-      justify-content: center;
-    }
-
-    .navbar {
-      padding: 14px 28px;
-      margin-top: 16px;
-      display: flex;
-      background: rgba(255, 255, 255, 0.65);
+    .glass-card {
+      background: rgba(255, 255, 255, 0.82);
       -webkit-backdrop-filter: blur(20px);
       backdrop-filter: blur(20px);
-      border: 2px solid rgba(255, 255, 255, 0.8);
-      box-shadow: 0 10px 30px rgba(244, 114, 182, 0.15);
-      border-radius: 9999px;
-      max-width: 36rem;
-      width: 85%;
-      justify-content: center;
-    }
-
-    main {
-      text-align: center;
-      align-items: center;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-
-    h1 {
-      font-weight: 800;
-      font-size: 3.5rem;
-      letter-spacing: -1px;
-      margin-bottom: 0.5rem;
+      border: 2px solid rgba(255, 255, 255, 0.95);
+      box-shadow: 0 20px 50px rgba(244, 114, 182, 0.18);
     }
 
     .text-effect {
@@ -79,287 +48,19 @@
       background-clip: text;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      animation: pulseGlow 6s ease-in-out infinite;
     }
 
-    .text-large {
-      font-size: 1.2rem;
-      line-height: 1.6;
-      color: #334155;
-      max-width: 650px;
-      margin: 0 auto;
-      font-weight: 500;
-    }
-
-    .upload-section {
-      margin-top: 2.5rem;
-    }
-
-    .btn {
-      appearance: none;
+    .btn-gradient {
       background: linear-gradient(135deg, #f472b6, #38bdf8);
-      border: none;
-      border-radius: 20px;
       color: #ffffff;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      font-size: 17px;
-      font-weight: 700;
-      padding: 16px 36px;
-      transition: all 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
-      width: 100%;
-      box-shadow: 0 10px 25px -5px rgba(244, 114, 182, 0.5);
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 8px 20px -4px rgba(244, 114, 182, 0.4);
     }
 
-    .btn:hover {
-      transform: translateY(-4px) scale(1.02);
-      box-shadow: 0 18px 30px -5px rgba(56, 189, 248, 0.6);
+    .btn-gradient:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 14px 25px -4px rgba(56, 189, 248, 0.5);
       background: linear-gradient(135deg, #f43f5e, #0284c7);
-    }
-
-    .btn-secondary {
-      background: rgba(255, 255, 255, 0.8);
-      border: 2px solid #38bdf8;
-      color: #0284c7;
-      font-size: 0.85rem;
-      font-weight: 700;
-      padding: 10px 20px;
-      border-radius: 14px;
-      cursor: pointer;
-      margin-bottom: 1rem;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2);
-    }
-
-    .btn-secondary:hover {
-      background: #e0f2fe;
-      transform: translateY(-2px);
-    }
-
-    .editorDiv {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-top: 3.5rem;
-      margin-bottom: 3rem;
-      border-radius: 2.5rem;
-      max-width: 680px;
-      background: rgba(255, 255, 255, 0.7);
-      -webkit-backdrop-filter: blur(25px);
-      backdrop-filter: blur(25px);
-      border: 2px solid rgba(255, 255, 255, 0.9);
-      box-shadow: 0 20px 50px rgba(244, 114, 182, 0.2);
-      width: 90%;
-      padding: 2.5rem 1rem;
-    }
-
-    .editPlaceholder {
-      color: #64748b;
-      margin-bottom: 2rem;
-      font-size: 1.05rem;
-      font-weight: 500;
-    }
-
-    .section-title {
-      font-size: 1.25rem;
-      font-weight: 800;
-      color: #0284c7;
-      margin-top: 1.5rem;
-      margin-bottom: 1rem;
-      border-bottom: 2px solid #fbcfe8;
-      padding-bottom: 0.5rem;
-      width: 85%;
-      text-align: left;
-    }
-
-    label {
-      display: inline-block;
-      text-align: left;
-      color: #334155;
-      width: 85%;
-      margin-bottom: 0.5rem;
-      font-size: 0.95rem;
-      font-weight: 700;
-    }
-
-    .form-group {
-      margin-bottom: 1.5rem;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .form-control {
-      background: rgba(255, 255, 255, 0.9);
-      border: 2px solid #fbcfe8;
-      border-radius: 16px;
-      width: 85%;
-      padding: 0.9rem 1.1rem;
-      color: #0284c7;
-      font-weight: 600;
-      outline: none;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
-      transition: all 0.2s ease;
-    }
-
-    .form-control:focus {
-      border-color: #38bdf8;
-      box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
-    }
-
-    .icon-wrapper {
-      position: relative;
-      display: inline-block;
-      cursor: pointer;
-      margin-bottom: 10px;
-    }
-
-    #app-icon {
-      border-radius: 1.5rem;
-      box-shadow: 0 10px 25px rgba(244, 114, 182, 0.3);
-      border: 3px solid #ffffff;
-      object-fit: cover;
-    }
-
-    .icon-overlay {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100px; height: 100px;
-      border-radius: 1.5rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      font-weight: 800;
-      font-size: 0.85rem;
-      opacity: 0;
-      background: rgba(14, 165, 233, 0.7);
-      transition: opacity 0.3s ease;
-    }
-
-    .icon-wrapper:hover .icon-overlay { opacity: 1; }
-
-    .editEntry {
-      margin-bottom: 25px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .icon-hint {
-      font-size: 0.85rem;
-      color: #0284c7;
-      font-weight: 700;
-      margin-top: 4px;
-    }
-
-    /* Architecture Badge */
-    .arch-badge-container {
-      width: 85%;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: rgba(255, 255, 255, 0.85);
-      border: 2px solid #fbcfe8;
-      border-radius: 18px;
-      padding: 0.9rem 1.1rem;
-      margin-bottom: 1.5rem;
-      box-sizing: border-box;
-      box-shadow: 0 4px 12px rgba(244, 114, 182, 0.08);
-    }
-
-    .arch-label {
-      font-size: 0.95rem;
-      font-weight: 700;
-      color: #334155;
-    }
-
-    .arch-badge {
-      background: linear-gradient(135deg, #f472b6, #c084fc);
-      color: #ffffff;
-      font-size: 0.85rem;
-      font-weight: 800;
-      padding: 6px 16px;
-      border-radius: 9999px;
-      letter-spacing: 0.5px;
-      box-shadow: 0 4px 12px rgba(244, 114, 182, 0.3);
-    }
-
-    .arch-badge.arch-universal {
-      background: linear-gradient(135deg, #38bdf8, #818cf8);
-      color: #ffffff;
-      box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
-    }
-
-    .arch-badge.arch-32 {
-      background: linear-gradient(135deg, #facc15, #f97316);
-      color: #ffffff;
-      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
-    }
-
-    .launch-screens-grid {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 15px;
-      width: 85%;
-      margin-bottom: 1rem;
-    }
-
-    .launch-screen-card {
-      background: rgba(255, 255, 255, 0.85);
-      border: 2px solid #fbcfe8;
-      border-radius: 20px;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      width: 120px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-    }
-
-    .launch-screen-card:hover {
-      border-color: #38bdf8;
-      transform: translateY(-3px);
-      box-shadow: 0 8px 20px rgba(56, 189, 248, 0.25);
-    }
-
-    .launch-img-preview {
-      width: 70px;
-      height: 105px;
-      object-fit: contain;
-      background: #f1f5f9;
-      border-radius: 12px;
-      border: 1px solid #e2e8f0;
-      margin-bottom: 8px;
-    }
-
-    .launch-screen-name {
-      font-size: 0.8rem;
-      font-weight: 700;
-      color: #1e293b;
-      text-align: center;
-    }
-
-    .launch-screen-sub {
-      font-size: 0.7rem;
-      color: #64748b;
-      font-weight: 600;
-      text-align: center;
-      margin-top: 2px;
-    }
-
-    .submitBtn {
-      max-width: 280px;
-      margin-top: 25px;
-      background: linear-gradient(135deg, #38bdf8, #f472b6);
-      color: #ffffff;
     }
 
     .loader {
@@ -371,128 +72,180 @@
       animation: loader-rotate 0.6s linear infinite;
     }
 
-    .hidden { display: none !important; }
-
-    footer {
-      margin-top: 3rem;
-      padding-bottom: 2rem;
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
     }
-
-    .footer-text {
-      font-size: 1rem;
-      font-weight: 800;
-      text-align: center;
-      color: #475569;
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.4);
+      border-radius: 8px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #f472b6;
+      border-radius: 8px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #38bdf8;
     }
   </style>
 </head>
-<body>
-  <header>
-    <div class="navbar">
-      <span class="text-effect" style="font-weight: 800; font-size: 1.35rem;">EditIPA Studio</span>
+<body class="flex flex-col min-h-screen">
+
+  <!-- Header Navigation -->
+  <header class="flex justify-center pt-4 pb-2 px-4">
+    <div class="px-6 py-3 flex items-center justify-between bg-white/80 backdrop-blur-md border-2 border-white/90 rounded-full shadow-lg max-w-4xl w-full">
+      <div class="flex items-center space-x-3">
+        <span class="text-2xl">⚡</span>
+        <span class="text-effect font-extrabold text-xl tracking-tight">EditIPA Studio</span>
+      </div>
+      <div class="flex items-center space-x-2 text-xs font-bold text-slate-700">
+        <span class="px-3 py-1 bg-pink-100 text-pink-700 rounded-full border border-pink-200">v2.8 Studio</span>
+      </div>
     </div>
   </header>
 
-  <main>
-    <div class="main-content">
-      <h1 class="text-effect">EditIPA</h1>
-      <p class="text-large">
-        A simple tool to edit IPAs directly in browser.<br>
-        Extracts app properties, resizes app icons, and customizes boot screens.
+  <!-- Main Container -->
+  <main class="flex-grow flex flex-col items-center justify-start p-4 md:p-6 max-w-7xl mx-auto w-full space-y-6">
+
+    <!-- Hero Title -->
+    <div class="text-center space-y-2 mt-2">
+      <h1 class="text-4xl md:text-5xl font-black text-effect tracking-tight">iOS Package Studio</h1>
+      <p class="text-slate-800 font-bold max-w-2xl mx-auto text-sm md:text-base">
+        Extract IPAs, edit metadata, replace icons, and customize splash screens with instant client-side repacking.
       </p>
     </div>
 
-    <div class="upload-section">
-      <input type="file" id="file-upload" accept=".ipa" style="display: none" onchange="handleFileUpload(event)">
-      <button class="btn" onclick="document.getElementById('file-upload').click();">
-        Upload IPA <span id="loader" class="loader hidden"></span>
+    <!-- Upload Box -->
+    <div class="w-full max-w-xl">
+      <input type="file" id="file-upload" accept=".ipa" class="hidden" onchange="handleFileUpload(event)">
+      <button onclick="document.getElementById('file-upload').click();" class="btn-gradient w-full py-4 px-6 rounded-2xl font-bold text-lg flex items-center justify-center space-x-3 cursor-pointer">
+        <span>📂 Select or Drop IPA File</span>
+        <span id="loader" class="loader hidden"></span>
       </button>
+      <p id="file-info" class="text-center text-xs font-bold text-slate-700 mt-2">No file loaded</p>
     </div>
 
-    <div class="editorDiv">
-      <h2 class="text-effect editTitle">Editor</h2>
-      <p id="placeholder" class="editPlaceholder">Upload an IPA file to start editing</p>
-      <p id="editProcessStatus" class="text-effect hidden"></p>
+    <!-- Main Workspace -->
+    <div id="workspace" class="w-full glass-card rounded-3xl p-4 md:p-6 hidden flex flex-col space-y-6">
 
-      <form id="plist-form" class="hidden" onsubmit="handleFormSubmit(event)">
-        <div class="editBody">
+      <!-- METADATA & ASSETS SECTION -->
+      <div id="tab-content-meta" class="space-y-6">
+        <form id="plist-form" onsubmit="handleFormSubmit(event)" class="space-y-6">
           
-          <div class="section-title">App Icon</div>
-          <div class="editEntry">
-            <div class="icon-wrapper" onclick="document.getElementById('icon-input').click();">
-              <img id="app-icon" width="100" height="100" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='%23f1f5f9'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8' font-size='12' font-weight='bold'>No Icon</text></svg>">
-              <div class="icon-overlay">Change</div>
+          <!-- App Icon & Header Status -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center bg-white/70 p-5 rounded-2xl border border-pink-100 shadow-sm">
+            <div class="flex flex-col items-center justify-center space-y-2">
+              <span class="text-xs font-extrabold uppercase tracking-wider text-slate-600">App Icon</span>
+              <div class="relative group cursor-pointer" onclick="document.getElementById('icon-input').click();">
+                <img id="app-icon" width="100" height="100" class="rounded-2xl shadow-lg border-4 border-white object-cover" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='%23f1f5f9'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8' font-size='12' font-weight='bold'>No Icon</text></svg>">
+                <div class="absolute inset-0 bg-sky-500/80 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity font-bold text-white text-xs">
+                  Change Icon
+                </div>
+              </div>
+              <input type="file" id="icon-input" accept="image/png,image/jpeg" class="hidden" onchange="handleIconChange(event)">
+              <span class="text-[11px] font-bold text-sky-600">Click preview to replace</span>
             </div>
-            <span class="icon-hint">Click icon to change</span>
-            <input type="file" id="icon-input" accept="image/png,image/jpeg" style="display: none;" onchange="handleIconChange(event)">
+
+            <div class="md:col-span-2 space-y-3">
+              <div class="flex items-center justify-between bg-white/90 p-3 rounded-xl border border-pink-200">
+                <span class="text-sm font-bold text-slate-800">Architecture Detection</span>
+                <span id="arch-badge" class="px-4 py-1.5 rounded-full text-xs font-black text-white bg-gradient-to-r from-pink-400 to-purple-500 shadow-sm">
+                  Detecting...
+                </span>
+              </div>
+              <div class="flex items-center justify-between bg-white/90 p-3 rounded-xl border border-pink-200">
+                <span class="text-sm font-bold text-slate-800">Main Binary Executable</span>
+                <span id="exec-name-badge" class="font-mono text-xs font-extrabold text-sky-700 bg-sky-100 px-3 py-1 rounded-lg border border-sky-300">
+                  None
+                </span>
+              </div>
+            </div>
           </div>
 
-          <div class="section-title">App Details</div>
-
-          <!-- Architecture Badge -->
-          <div class="arch-badge-container">
-            <span class="arch-label">Architecture</span>
-            <span id="arch-badge" class="arch-badge">Unknown</span>
+          <!-- Metadata Fields -->
+          <div class="space-y-4">
+            <h3 class="text-lg font-black text-sky-700 border-b-2 border-pink-200 pb-1">Info.plist Configuration</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Display Name (CFBundleDisplayName)</label>
+                <input id="display-name" class="w-full bg-white/90 border-2 border-pink-200 rounded-xl px-3.5 py-2 text-sm font-semibold text-sky-800 focus:outline-none focus:border-sky-400" required>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Bundle Identifier (CFBundleIdentifier)</label>
+                <input id="bundle-identifier" class="w-full bg-white/90 border-2 border-pink-200 rounded-xl px-3.5 py-2 text-sm font-semibold text-sky-800 focus:outline-none focus:border-sky-400" required>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Bundle Name (CFBundleName)</label>
+                <input id="bundle-name" class="w-full bg-white/90 border-2 border-pink-200 rounded-xl px-3.5 py-2 text-sm font-semibold text-sky-800 focus:outline-none focus:border-sky-400" required>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Bundle Version (CFBundleVersion)</label>
+                <input id="bundle-version" class="w-full bg-white/90 border-2 border-pink-200 rounded-xl px-3.5 py-2 text-sm font-semibold text-sky-800 focus:outline-none focus:border-sky-400" required>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Short Version String (CFBundleShortVersionString)</label>
+                <input id="short-version-string" class="w-full bg-white/90 border-2 border-pink-200 rounded-xl px-3.5 py-2 text-sm font-semibold text-sky-800 focus:outline-none focus:border-sky-400" required>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Minimum iOS Version (MinimumOSVersion)</label>
+                <input id="min-ios-version" class="w-full bg-white/90 border-2 border-pink-200 rounded-xl px-3.5 py-2 text-sm font-semibold text-sky-800 focus:outline-none focus:border-sky-400" required>
+              </div>
+            </div>
           </div>
 
-          <div class="form-group">
-            <label for="display-name">Display Name (CFBundleDisplayName)</label>
-            <input id="display-name" class="form-control" required>
-          </div>
-
-          <div class="form-group">
-            <label for="bundle-identifier">Bundle Identifier (CFBundleIdentifier)</label>
-            <input id="bundle-identifier" class="form-control" required>
-          </div>
-
-          <div class="form-group">
-            <label for="bundle-name">Bundle Name (CFBundleName)</label>
-            <input id="bundle-name" class="form-control" required>
-          </div>
-
-          <div class="form-group">
-            <label for="bundle-version">Bundle Version (CFBundleVersion)</label>
-            <input id="bundle-version" class="form-control" required>
-          </div>
-
-          <div class="form-group">
-            <label for="short-version-string">Short Version String (CFBundleShortVersionString)</label>
-            <input id="short-version-string" class="form-control" required>
-          </div>
-
-          <div class="form-group">
-            <label for="min-ios-version">Minimum iOS Version (MinimumOSVersion)</label>
-            <input id="min-ios-version" class="form-control" required>
-          </div>
-
-          <!-- Boot / Splash Screens Section -->
-          <div id="launch-screen-section" class="hidden" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
-            <div class="section-title">Boot / Splash Screen</div>
-            <p style="font-size: 0.85rem; color: #475569; width: 85%; text-align: left; margin-top: -0.5rem; margin-bottom: 1rem; font-weight: 500;">
-              Click any slot to swap boot images. iPad Portrait, iPad Landscape, and iPhone 4" (iPhone 5 and up) are shown by default.
+          <!-- Boot Screens Section -->
+          <div id="launch-screen-section" class="space-y-3">
+            <h3 class="text-lg font-black text-sky-700 border-b-2 border-pink-200 pb-1">Boot & Splash Screens</h3>
+            <p class="text-xs font-semibold text-slate-600">
+              Click any image card to replace its splash screen slot with a new image.
             </p>
 
-            <div id="launch-screens-grid" class="launch-screens-grid"></div>
+            <div id="launch-screens-grid" class="flex flex-wrap gap-4 justify-center py-2"></div>
 
-            <button type="button" id="toggle-35-btn" class="btn-secondary" onclick="toggle35Slot()">+ Add 3.5" Boot Screen Slot (iPhone 4 / Legacy)</button>
-
-            <input type="file" id="launch-screen-file-input" accept="image/png,image/jpeg" style="display: none;" onchange="handleLaunchScreenFileSelect(event)">
+            <div class="flex justify-center">
+              <button type="button" id="toggle-35-btn" onclick="toggle35Slot()" class="px-4 py-2 bg-white border-2 border-sky-400 text-sky-700 rounded-xl text-xs font-bold hover:bg-sky-50 transition-all shadow-sm">
+                + Add 3.5" Boot Screen Slot (iPhone 4 / Legacy)
+              </button>
+            </div>
+            <input type="file" id="launch-screen-file-input" accept="image/png,image/jpeg" class="hidden" onchange="handleLaunchScreenFileSelect(event)">
           </div>
 
-          <button type="submit" class="btn submitBtn">Export & Save IPA</button>
-        </div>
-      </form>
+          <!-- Save Button -->
+          <div class="pt-4 flex justify-center">
+            <button type="submit" class="btn-gradient px-8 py-3.5 rounded-2xl font-black text-base shadow-lg">
+              💾 Export & Re-compile IPA
+            </button>
+          </div>
+        </form>
+      </div>
+
     </div>
+
   </main>
 
-  <footer>
-    <p class="text-effect footer-text">Made by Jeremy</p>
+  <!-- Footer -->
+  <footer class="py-4 text-center text-xs font-bold text-slate-600">
+    <span class="text-effect">EditIPA Studio</span> • Built for iOS Application Editing
   </footer>
 
+  <!-- Application Logic -->
   <script>
+    const CORE_LAUNCH_CATEGORIES = [
+      { id: 'ipad_port', name: 'iPad Portrait', sub: '768x1024 / 1536x2048', match: /Default-Portrait.*\.png$/i },
+      { id: 'ipad_land', name: 'iPad Landscape', sub: '1024x768 / 2048x1536', match: /Default-Landscape.*\.png$/i },
+      { id: 'iphone_4in', name: 'iPhone 4" Retina', sub: '640x1136 (568h)', match: /Default-568h@2x.*\.png$/i },
+      { id: 'iphone_47in', name: 'iPhone 4.7"', sub: '750x1334 (667h)', match: /(Default|LaunchImage).*667h.*\.png$/i },
+      { id: 'iphone_55in_port', name: 'iPhone 5.5" Portrait', sub: '1242x2208 (736h)', match: /(Default|LaunchImage).*(Portrait)?.*736h.*\.png$/i },
+      { id: 'iphone_55in_land', name: 'iPhone 5.5" Landscape', sub: '2208x1242 (736h)', match: /(Default|LaunchImage).*Landscape.*736h.*\.png$/i }
+    ];
+    const OPTIONAL_35_CATEGORY = { id: 'iphone_35in', name: 'iPhone 3.5" (Legacy)', sub: '320x480 / 640x960', match: /Default(@2x)?\.png$/i };
+
     let currentZip = null;
     let plistObj = {};
     let plistPath = null;
+    let mainExecPath = null;
     let uploadedImageElement = null;
     let explicitIconTargetFiles = [];
     let detectedLaunchFiles = [];
@@ -500,46 +253,76 @@
     let selectedCategoryTarget = null;
     let categoryReplacements = {};
     let is35SlotAdded = false;
+    let allZipFiles = [];
 
-    const CORE_LAUNCH_CATEGORIES = [
-      { id: "ipad_port", name: "iPad Portrait", sub: "768x1024", match: /Portrait/i, defaultW: 768, defaultH: 1024 },
-      { id: "ipad_land", name: "iPad Landscape", sub: "1024x768", match: /Landscape/i, defaultW: 1024, defaultH: 768 },
-      { id: "iphone_568", name: "iPhone 4\"", sub: "640x1136 (iPhone 5+)", match: /-568h|640x1136/i, defaultW: 640, defaultH: 1136 }
-    ];
+    function resetAppState() {
+      currentZip = null;
+      plistObj = {};
+      plistPath = null;
+      mainExecPath = null;
+      uploadedImageElement = null;
+      explicitIconTargetFiles = [];
+      detectedLaunchFiles = [];
+      activeCategories = [];
+      selectedCategoryTarget = null;
+      categoryReplacements = {};
+      allZipFiles = [];
 
-    const OPTIONAL_35_CATEGORY = {
-      id: "iphone_35",
-      name: "iPhone 3.5\"",
-      sub: "640x960 (iPhone 4/4S)",
-      match: /Default(@2x)?\.png$|Default-Portrait~ipad\.png/i,
-      defaultW: 640,
-      defaultH: 960
-    };
+      document.getElementById('display-name').value = '';
+      document.getElementById('bundle-identifier').value = '';
+      document.getElementById('bundle-name').value = '';
+      document.getElementById('bundle-version').value = '';
+      document.getElementById('short-version-string').value = '';
+      document.getElementById('min-ios-version').value = '';
+      document.getElementById('exec-name-badge').innerText = 'None';
+      document.getElementById('arch-badge').innerText = 'Detecting...';
+      document.getElementById('app-icon').src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='%23f1f5f9'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8' font-size='12' font-weight='bold'>No Icon</text></svg>";
+    }
 
-    // Mach-O Binary Architecture Detector
+    async function checkMachOMagic(fileEntry) {
+      if (!fileEntry) return false;
+      try {
+        const header = await fileEntry.async("uint8array");
+        if (header.length < 4) return false;
+        const view = new DataView(header.buffer, header.byteOffset, 4);
+        const magicBE = view.getUint32(0, false);
+        const magicLE = view.getUint32(0, true);
+        return (magicBE === 0xFEEDFACE || magicLE === 0xFEEDFACE || magicBE === 0xFEEDFACF || magicLE === 0xFEEDFACF || magicBE === 0xCAFEBABE || magicLE === 0xCAFEBABE);
+      } catch (e) {
+        return false;
+      }
+    }
+
     async function detectBinaryArchitecture(appPrefix, executableName) {
       let zipEntry = null;
 
       if (executableName) {
         zipEntry = currentZip.file(appPrefix + executableName);
+        if (zipEntry) mainExecPath = appPrefix + executableName;
       }
 
       if (!zipEntry) {
-        currentZip.forEach((relPath) => {
-          if (!zipEntry && relPath.startsWith(appPrefix)) {
-            const subName = relPath.replace(appPrefix, '');
-            if (!subName.includes('/') && !subName.includes('.') && subName !== '') {
-              zipEntry = currentZip.file(relPath);
+        for (const item of allZipFiles) {
+          if (item.path.startsWith(appPrefix) && !item.path.endsWith('/')) {
+            const isMachO = await checkMachOMagic(item.entry);
+            if (isMachO) {
+              zipEntry = item.entry;
+              mainExecPath = item.path;
+              break;
             }
           }
-        });
+        }
       }
 
-      if (!zipEntry) return "32-bit (armv7)";
+      if (mainExecPath) {
+        document.getElementById('exec-name-badge').innerText = mainExecPath.split('/').pop();
+      }
+
+      if (!zipEntry) return "32-bit (ARMv7)";
 
       try {
         const headerUint8 = await zipEntry.async("uint8array");
-        if (headerUint8.length < 8) return "32-bit (armv7)";
+        if (headerUint8.length < 8) return "32-bit (ARMv7)";
 
         const view = new DataView(headerUint8.buffer, headerUint8.byteOffset, headerUint8.byteLength);
         const magicBE = view.getUint32(0, false);
@@ -558,20 +341,15 @@
           }
 
           if (archs.has("32-bit") && archs.has("64-bit")) {
-            return "Universal";
-          } else if (archs.size > 1) {
-            return "Universal (" + Array.from(archs).join(" & ") + ")";
-          } else if (archs.size === 1) {
-            return Array.from(archs)[0];
+            return "Universal (32 & 64)";
+          } else if (archs.size > 0) {
+            return Array.from(archs).join(" & ");
           }
           return "Universal";
         }
 
-        if (magicBE === 0xFEEDFACE || magicLE === 0xFEEDFACE) {
-          return "32-bit";
-        } else if (magicBE === 0xFEEDFACF || magicLE === 0xFEEDFACF) {
-          return "64-bit";
-        }
+        if (magicBE === 0xFEEDFACE || magicLE === 0xFEEDFACE) return "32-bit (ARMv7)";
+        if (magicBE === 0xFEEDFACF || magicLE === 0xFEEDFACF) return "64-bit (ARM64)";
       } catch (err) {
         console.warn("Arch detection fallback:", err);
       }
@@ -591,16 +369,14 @@
 
     function objectToPlistXml(obj) {
       function serializeValue(val) {
-        if (typeof val === 'boolean') {
-          return val ? '<true/>' : '<false/>';
-        } else if (typeof val === 'number') {
-          return Number.isInteger(val) ? `<integer>${val}</integer>` : `<real>${val}</real>`;
-        } else if (typeof val === 'string') {
+        if (typeof val === 'boolean') return val ? '<true/>' : '<false/>';
+        if (typeof val === 'number') return Number.isInteger(val) ? `<integer>${val}</integer>` : `<real>${val}</real>`;
+        if (typeof val === 'string') {
           const escaped = val.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
           return `<string>${escaped}</string>`;
-        } else if (Array.isArray(val)) {
-          return `<array>${val.map(serializeValue).join('')}</array>`;
-        } else if (typeof val === 'object' && val !== null) {
+        }
+        if (Array.isArray(val)) return `<array>${val.map(serializeValue).join('')}</array>`;
+        if (typeof val === 'object' && val !== null) {
           let keys = Object.keys(val);
           let dict = keys.map(k => `<key>${k}</key>${serializeValue(val[k])}`).join('');
           return `<dict>${dict}</dict>`;
@@ -671,20 +447,19 @@ ${serializeValue(obj)}
       const file = event.target.files[0];
       if (!file) return;
 
+      resetAppState();
       document.getElementById('loader').classList.remove('hidden');
-      document.getElementById('placeholder').innerText = "Parsing Info.plist from IPA...";
-      detectedLaunchFiles = [];
-      explicitIconTargetFiles = [];
-      categoryReplacements = {};
-      is35SlotAdded = false;
-      document.getElementById('toggle-35-btn').innerText = "+ Add 3.5\" Boot Screen Slot (iPhone 4 / Legacy)";
+      document.getElementById('file-info').innerText = `${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
 
       try {
         const arrayBuffer = await file.arrayBuffer();
         currentZip = await JSZip.loadAsync(arrayBuffer);
         
         let foundPath = null;
-        currentZip.forEach((relativePath) => {
+        currentZip.forEach((relativePath, fileEntry) => {
+          if (!fileEntry.dir) {
+            allZipFiles.push({ path: relativePath, entry: fileEntry });
+          }
           if (relativePath.match(/Info\.plist$/i) && relativePath.includes('.app/')) {
             if (!foundPath || relativePath.length < foundPath.length) {
               foundPath = relativePath;
@@ -692,9 +467,7 @@ ${serializeValue(obj)}
           }
         });
 
-        if (!foundPath) {
-          throw new Error("Could not find any Info.plist inside the app bundle.");
-        }
+        if (!foundPath) throw new Error("Could not find any Info.plist inside the app bundle.");
 
         plistPath = foundPath;
         const plistUint8 = await currentZip.file(plistPath).async("uint8array");
@@ -705,7 +478,7 @@ ${serializeValue(obj)}
             if (parsed && parsed.length > 0) plistObj = parsed[0];
           }
         } catch (bpErr) {
-          console.warn("bplist parse failed, attempting XML decode");
+          console.warn("bplist parse failed, fallback to XML parser");
         }
 
         if (!plistObj || Object.keys(plistObj).length === 0) {
@@ -717,16 +490,7 @@ ${serializeValue(obj)}
           }
         }
 
-        if (!plistObj || typeof plistObj !== 'object' || Object.keys(plistObj).length === 0) {
-          plistObj = {
-            CFBundleDisplayName: file.name.replace(/\.ipa$/i, ''),
-            CFBundleName: file.name.replace(/\.ipa$/i, ''),
-            CFBundleIdentifier: "com.legacy.app",
-            CFBundleVersion: "1.0",
-            CFBundleShortVersionString: "1.0",
-            MinimumOSVersion: "6.0"
-          };
-        }
+        if (!plistObj || typeof plistObj !== 'object') plistObj = {};
 
         document.getElementById('display-name').value = plistObj.CFBundleDisplayName || plistObj.CFBundleName || file.name.replace(/\.ipa$/i, '');
         document.getElementById('bundle-identifier').value = plistObj.CFBundleIdentifier || "com.legacy.app";
@@ -737,17 +501,9 @@ ${serializeValue(obj)}
 
         const appPrefix = plistPath.substring(0, plistPath.lastIndexOf('Info.plist'));
 
-        // Detect Architecture
         const archType = await detectBinaryArchitecture(appPrefix, plistObj.CFBundleExecutable);
         const badgeEl = document.getElementById('arch-badge');
         badgeEl.innerText = archType;
-        badgeEl.className = "arch-badge";
-
-        if (archType.includes("Universal")) {
-          badgeEl.classList.add("arch-universal");
-        } else if (archType.includes("32-bit")) {
-          badgeEl.classList.add("arch-32");
-        }
 
         let plistIconNames = [];
         const extractPlistIcons = (dict) => {
@@ -770,7 +526,7 @@ ${serializeValue(obj)}
             let isDeclaredIcon = plistIconNames.some(name => fileName.includes(name));
             let isClassicAppIcon = fileName.match(/^(Icon(@2x|~ipad)?|AppIcon.*)\.png$/i);
 
-            if ((isDeclaredIcon || isClassicAppIcon) && !fileName.includes('framework') && !fileName.includes('plugin')) {
+            if ((isDeclaredIcon || isClassicAppIcon) && !fileName.includes('framework')) {
               explicitIconTargetFiles.push(fileName);
             }
 
@@ -780,20 +536,9 @@ ${serializeValue(obj)}
           }
         });
 
-        if (explicitIconTargetFiles.length === 0) {
-          currentZip.forEach((relativePath) => {
-            const fileName = relativePath.replace(appPrefix, '');
-            if (relativePath.startsWith(appPrefix) && fileName.endsWith('.png') && (fileName.toLowerCase().includes('icon') || fileName.toLowerCase().includes('cfbundle'))) {
-              if (!fileName.includes('framework') && !fileName.includes('facebook') && !fileName.includes('twitter')) {
-                explicitIconTargetFiles.push(fileName);
-              }
-            }
-          });
-        }
-
         let iconThumbEntry = null;
         for (const iconFile of explicitIconTargetFiles) {
-          if (iconFile.includes('60x60@2x') || iconFile.includes('114x114') || iconFile.includes('Icon@2x.png') || iconFile.includes('Icon.png')) {
+          if (iconFile.includes('60x60@2x') || iconFile.includes('114x114') || iconFile.includes('Icon@2x.png')) {
             iconThumbEntry = currentZip.file(appPrefix + iconFile);
             break;
           }
@@ -810,13 +555,11 @@ ${serializeValue(obj)}
         renderLaunchScreenGrid();
 
         document.getElementById('loader').classList.add('hidden');
-        document.getElementById('placeholder').classList.add('hidden');
-        document.getElementById('plist-form').classList.remove('hidden');
+        document.getElementById('workspace').classList.remove('hidden');
 
       } catch (err) {
         alert("Error loading IPA: " + err.message);
         document.getElementById('loader').classList.add('hidden');
-        document.getElementById('placeholder').innerText = "Failed to parse IPA.";
       }
     }
 
@@ -826,37 +569,34 @@ ${serializeValue(obj)}
       activeCategories = [];
 
       let categoriesToUse = [...CORE_LAUNCH_CATEGORIES];
-      if (is35SlotAdded) {
-        categoriesToUse.push(OPTIONAL_35_CATEGORY);
-      }
+      if (is35SlotAdded) categoriesToUse.push(OPTIONAL_35_CATEGORY);
 
       for (const cat of categoriesToUse) {
         const matches = detectedLaunchFiles.filter(item => cat.match.test(item.name));
-        const catGroup = { category: cat, matches: matches.length > 0 ? matches : detectedLaunchFiles };
-        activeCategories.push(catGroup);
+        activeCategories.push({ category: cat, matches: matches.length > 0 ? matches : detectedLaunchFiles });
 
         const card = document.createElement('div');
-        card.className = 'launch-screen-card';
+        card.className = "bg-white/90 border-2 border-pink-200 rounded-2xl p-3 flex flex-col items-center cursor-pointer hover:border-sky-400 hover:shadow-lg transition-all w-28";
         card.onclick = () => triggerLaunchScreenUpload(cat.id);
 
         const img = document.createElement('img');
-        img.className = 'launch-img-preview';
+        img.className = "w-16 h-24 object-contain bg-slate-100 rounded-lg border border-slate-200 mb-2";
         img.id = 'launch-preview-' + cat.id;
 
         if (matches.length > 0) {
           const zipEntry = currentZip.file(matches[0].fullPath);
           const srcUrl = await getSafePreviewDataUrl(zipEntry);
-          img.src = srcUrl || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='70' height='105'><rect width='70' height='105' fill='%23f1f5f9'/></svg>";
+          img.src = srcUrl || "";
         } else {
           img.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='70' height='105'><rect width='70' height='105' fill='%23f1f5f9'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%2338bdf8' font-size='10' font-weight='bold'>Custom</text></svg>";
         }
 
         const label = document.createElement('span');
-        label.className = 'launch-screen-name';
+        label.className = "text-[11px] font-extrabold text-slate-800 text-center leading-tight";
         label.innerText = cat.name;
 
         const sub = document.createElement('span');
-        sub.className = 'launch-screen-sub';
+        sub.className = "text-[9px] font-bold text-slate-500 text-center mt-0.5";
         sub.innerText = cat.sub;
 
         card.appendChild(img);
@@ -864,18 +604,11 @@ ${serializeValue(obj)}
         card.appendChild(sub);
         gridContainer.appendChild(card);
       }
-
-      document.getElementById('launch-screen-section').classList.remove('hidden');
     }
 
     function toggle35Slot() {
       is35SlotAdded = !is35SlotAdded;
-      const btn = document.getElementById('toggle-35-btn');
-      if (is35SlotAdded) {
-        btn.innerText = "- Remove 3.5\" Boot Screen Slot";
-      } else {
-        btn.innerText = "+ Add 3.5\" Boot Screen Slot (iPhone 4 / Legacy)";
-      }
+      document.getElementById('toggle-35-btn').innerText = is35SlotAdded ? "- Remove 3.5\" Boot Screen Slot" : "+ Add 3.5\" Boot Screen Slot (iPhone 4 / Legacy)";
       renderLaunchScreenGrid();
     }
 
@@ -892,15 +625,13 @@ ${serializeValue(obj)}
           document.getElementById('launch-preview-' + selectedCategoryTarget).src = e.target.result;
           const img = new Image();
           img.src = e.target.result;
-          img.onload = () => {
-            categoryReplacements[selectedCategoryTarget] = img;
-          };
+          img.onload = () => { categoryReplacements[selectedCategoryTarget] = img; };
         };
         reader.readAsDataURL(file);
       }
     }
 
-    async function handleIconChange(event) {
+    function handleIconChange(event) {
       const file = event.target.files[0];
       if (file) {
         const reader = new FileReader();
@@ -908,101 +639,90 @@ ${serializeValue(obj)}
           document.getElementById('app-icon').src = e.target.result;
           const img = new Image();
           img.src = e.target.result;
-          img.onload = () => {
-            uploadedImageElement = img;
-          };
+          img.onload = () => { uploadedImageElement = img; };
         };
         reader.readAsDataURL(file);
       }
     }
 
+    // Form Submit Handler (Export & Re-compile IPA)
     async function handleFormSubmit(event) {
       event.preventDefault();
-      if (!currentZip || !plistObj) {
-        alert("Upload an IPA first!");
+      if (!currentZip || !plistPath) {
+        alert("No active IPA loaded!");
         return;
       }
 
-      const statusEl = document.getElementById('editProcessStatus');
-      statusEl.classList.remove('hidden');
-      statusEl.innerText = "Resizing assets and updating Info.plist...";
+      document.getElementById('loader').classList.remove('hidden');
 
-      plistObj.CFBundleDisplayName = document.getElementById('display-name').value;
-      plistObj.CFBundleIdentifier = document.getElementById('bundle-identifier').value;
-      plistObj.CFBundleName = document.getElementById('bundle-name').value;
-      plistObj.CFBundleVersion = document.getElementById('bundle-version').value;
-      plistObj.CFBundleShortVersionString = document.getElementById('short-version-string').value;
-      plistObj.MinimumOSVersion = document.getElementById('min-ios-version').value;
+      try {
+        plistObj.CFBundleDisplayName = document.getElementById('display-name').value;
+        plistObj.CFBundleIdentifier = document.getElementById('bundle-identifier').value;
+        plistObj.CFBundleName = document.getElementById('bundle-name').value;
+        plistObj.CFBundleVersion = document.getElementById('bundle-version').value;
+        plistObj.CFBundleShortVersionString = document.getElementById('short-version-string').value;
+        plistObj.MinimumOSVersion = document.getElementById('min-ios-version').value;
 
-      const appPrefix = plistPath.substring(0, plistPath.lastIndexOf('Info.plist'));
+        const updatedXmlPlist = objectToPlistXml(plistObj);
+        currentZip.file(plistPath, updatedXmlPlist);
 
-      if (uploadedImageElement) {
-        const standardIconSizes = [
-          { name: "AppIcon60x60@2x.png", size: 120 },
-          { name: "AppIcon60x60@3x.png", size: 180 },
-          { name: "AppIcon76x76@2x~ipad.png", size: 152 },
-          { name: "AppIcon83.5x83.5@2x~ipad.png", size: 167 },
-          { name: "ItunesArtwork.png", size: 1024 },
-          { name: "iTunesArtwork@2x.png", size: 1024 }
-        ];
+        const appPrefix = plistPath.substring(0, plistPath.lastIndexOf('Info.plist'));
 
-        for (const target of standardIconSizes) {
-          const resizedBuffer = await resizeImageToBlob(uploadedImageElement, target.size, target.size);
-          currentZip.file(appPrefix + target.name, resizedBuffer);
-        }
+        // Re-scale & Patch App Icons
+        if (uploadedImageElement && explicitIconTargetFiles.length > 0) {
+          for (const iconFile of explicitIconTargetFiles) {
+            let dim = 120;
+            if (iconFile.includes('152x152')) dim = 152;
+            else if (iconFile.includes('167x167')) dim = 167;
+            else if (iconFile.includes('180x180')) dim = 180;
+            else if (iconFile.includes('76x76')) dim = 76;
+            else if (iconFile.includes('57x57') || iconFile.includes('Icon.png')) dim = 57;
 
-        for (const iconFileName of explicitIconTargetFiles) {
-          let targetSize = 180;
-          if (iconFileName.includes('2x')) targetSize = 120;
-          if (iconFileName.includes('3x')) targetSize = 180;
-          if (iconFileName.includes('76')) targetSize = 152;
-          if (iconFileName.includes('1024')) targetSize = 1024;
-
-          const resizedBuffer = await resizeImageToBlob(uploadedImageElement, targetSize, targetSize);
-          currentZip.file(appPrefix + iconFileName, resizedBuffer);
-        }
-
-        plistObj.CFBundleIcons = {
-          CFBundlePrimaryIcon: {
-            CFBundleIconFiles: ["AppIcon60x60"],
-            CFBundleIconName: "AppIcon"
-          }
-        };
-      }
-
-      for (const [catId, replacementImg] of Object.entries(categoryReplacements)) {
-        const categoryGroup = activeCategories.find(k => k.category.id === catId);
-        if (categoryGroup) {
-          const filesToUpdate = categoryGroup.matches.length > 0 ? categoryGroup.matches : detectedLaunchFiles;
-
-          for (const targetFile of filesToUpdate) {
-            let targetW = categoryGroup.category.defaultW;
-            let targetH = categoryGroup.category.defaultH;
-
-            if (targetFile.name.match(/Default\.png$/i)) { targetW = 320; targetH = 480; }
-            else if (targetFile.name.match(/Default@2x\.png$/i)) { targetW = 640; targetH = 960; }
-            else if (targetFile.name.match(/-568h/i)) { targetW = 640; targetH = 1136; }
-            else if (targetFile.name.match(/Portrait/i)) { targetW = 768; targetH = 1024; }
-            else if (targetFile.name.match(/Landscape/i)) { targetW = 1024; targetH = 768; }
-
-            const splashBuffer = await resizeImageToBlob(replacementImg, targetW, targetH);
-            currentZip.file(targetFile.fullPath, splashBuffer);
+            const blobBuffer = await resizeImageToBlob(uploadedImageElement, dim, dim);
+            currentZip.file(appPrefix + iconFile, blobBuffer);
           }
         }
+
+        // Re-scale & Patch Boot / Splash Screens
+        for (const catTargetId in categoryReplacements) {
+          const imgObj = categoryReplacements[catTargetId];
+          const matchedCategoryObj = activeCategories.find(c => c.category.id === catTargetId);
+
+          if (imgObj && matchedCategoryObj) {
+            for (const splashItem of matchedCategoryObj.matches) {
+              let width = 640;
+              let height = 1136;
+
+              if (catTargetId === 'ipad_port') { width = 1536; height = 2048; }
+              else if (catTargetId === 'ipad_land') { width = 2048; height = 1536; }
+              else if (catTargetId === 'iphone_35in') { width = 640; height = 960; }
+              else if (catTargetId === 'iphone_47in') { width = 750; height = 1334; }
+              else if (catTargetId === 'iphone_55in_port') { width = 1242; height = 2208; }
+              else if (catTargetId === 'iphone_55in_land') { width = 2208; height = 1242; }
+
+              const splashBuffer = await resizeImageToBlob(imgObj, width, height);
+              currentZip.file(splashItem.fullPath, splashBuffer);
+            }
+          }
+        }
+
+        // Generate and Download modified IPA without '_patched' suffix
+        const repackedBlob = await currentZip.generateAsync({ type: "blob", mimeType: "application/octet-stream" });
+        const downloadUrl = URL.createObjectURL(repackedBlob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = (plistObj.CFBundleName || "app") + ".ipa";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(downloadUrl);
+
+        document.getElementById('loader').classList.add('hidden');
+        alert("IPA repacked and downloaded successfully!");
+      } catch (err) {
+        alert("Error exporting IPA: " + err.message);
+        document.getElementById('loader').classList.add('hidden');
       }
-
-      const updatedXml = objectToPlistXml(plistObj);
-      currentZip.file(plistPath, updatedXml);
-
-      statusEl.innerText = "Re-archiving IPA file...";
-      const blob = await currentZip.generateAsync({ type: "blob", mimeType: "application/octet-stream" });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = (plistObj.CFBundleDisplayName || "modified") + ".ipa";
-      a.click();
-
-      statusEl.innerText = "IPA updated & downloaded successfully!";
-      setTimeout(() => statusEl.classList.add('hidden'), 4000);
     }
   </script>
 </body>
