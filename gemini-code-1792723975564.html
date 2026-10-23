@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EditIPA - Editor for iOS Application Packages</title>
+
+  <!-- JSZip for IPA Extraction & Repacking -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <!-- bplist-parser for reading Binary Plists -->
+  <script src="https://cdn.jsdelivr.net/npm/bplist-parser@0.2.0/bplistParser.min.js"></script>
+
+  <style>
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { filter: drop-shadow(0 0 15px rgba(255, 0, 128, 0.4)) drop-shadow(0 0 30px rgba(0, 210, 255, 0.3)); }
+      50% { filter: drop-shadow(0 0 25px rgba(255, 0, 128, 0.7)) drop-shadow(0 0 45px rgba(123, 31, 162, 0.6)); }
+    }
+
+    @keyframes loader-rotate {
+      to { transform: rotate(360deg); }
+    }
+
+    body, html {
+      background: linear-gradient(-45deg, #0f0c20, #1a0b2e, #2a0845, #0d1b2a, #00223e);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+      color: #fff;
+      width: 100%;
+      min-height: 100vh;
+      font-family: Poppins, ui-sans-serif, system-ui, -apple-system, sans-serif;
+      margin: 0;
+    }
+
+    header {
+      margin-bottom: 2rem;
+      display: flex;
+      justify-content: center;
+    }
+
+    .navbar {
+      padding: 14px 24px;
+      margin-top: 16px;
+      display: flex;
+      background: rgba(255, 255, 255, 0.07);
+      -webkit-backdrop-filter: blur(25px);
+      backdrop-filter: blur(25px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      border-radius: 9999px;
+      max-width: 36rem;
+      width: 85%;
+      justify-content: center;
+    }
+
+    main {
+      text-align: center;
+      align-items: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    h1 {
+      font-weight: 800;
+      font-size: 3.5rem;
+      letter-spacing: -1px;
+      margin-bottom: 0.5rem;
+    }
+
+    .text-effect {
+      background: linear-gradient(135deg, #ff007f 0%, #a855f7 50%, #00f2fe 100%);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: pulseGlow 6s ease-in-out infinite;
+    }
+
+    .text-large {
+      font-size: 1.2rem;
+      line-height: 1.6;
+      color: #e2e8f0;
+      max-width: 650px;
+      margin: 0 auto;
+    }
+
+    .upload-section {
+      margin-top: 2.5rem;
+    }
+
+    .btn {
+      appearance: none;
+      background: linear-gradient(135deg, #ff007f, #7928ca);
+      border: none;
+      border-radius: 20px;
+      color: #ffffff;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 17px;
+      font-weight: 700;
+      padding: 16px 32px;
+      transition: all 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+      width: 100%;
+      box-shadow: 0 10px 25px -5px rgba(255, 0, 128, 0.5);
+    }
+
+    .btn:hover {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 20px 35px -5px rgba(255, 0, 128, 0.6);
+      background: linear-gradient(135deg, #ff1a8c, #8b31e0);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(0, 242, 254, 0.4);
+      color: #00f2fe;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 12px;
+      cursor: pointer;
+      margin-bottom: 1rem;
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(0, 242, 254, 0.15);
+      border-color: #00f2fe;
+    }
+
+    .editorDiv {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 4rem;
+      margin-bottom: 3rem;
+      border-radius: 2rem;
+      max-width: 680px;
+      background: rgba(255, 255, 255, 0.05);
+      -webkit-backdrop-filter: blur(20px);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      width: 90%;
+      padding: 2rem 1rem;
+    }
+
+    .editPlaceholder {
+      color: #cbd5e1;
+      margin-bottom: 2rem;
+      font-size: 1.05rem;
+    }
+
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #00f2fe;
+      margin-top: 1.5rem;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+      padding-bottom: 0.5rem;
+      width: 85%;
+      text-align: left;
+    }
+
+    label {
+      display: inline-block;
+      text-align: left;
+      color: #f1f5f9;
+      width: 85%;
+      margin-bottom: 0.5rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .form-control {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1.5px solid rgba(255, 255, 255, 0.12);
+      border-radius: 16px;
+      width: 85%;
+      padding: 0.9rem 1.1rem;
+      color: #00f2fe;
+      font-weight: 500;
+      outline: none;
+    }
+
+    .form-control:focus {
+      border-color: #00f2fe;
+      box-shadow: 0 0 15px rgba(0, 242, 254, 0.4);
+    }
+
+    .icon-wrapper {
+      position: relative;
+      display: inline-block;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+
+    #app-icon {
+      border-radius: 1.25rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      object-fit: cover;
+    }
+
+    .icon-overlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100px; height: 100px;
+      border-radius: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.8rem;
+      opacity: 0;
+      background: rgba(0, 0, 0, 0.6);
+      transition: opacity 0.3s ease;
+    }
+
+    .icon-wrapper:hover .icon-overlay { opacity: 1; }
+
+    .editEntry {
+      margin-bottom: 25px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .icon-hint {
+      font-size: 0.85rem;
+      color: #00f2fe;
+      margin-top: 4px;
+    }
+
+    .launch-screens-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+      width: 85%;
+      margin-bottom: 1rem;
+    }
+
+    .launch-screen-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 16px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      width: 120px;
+    }
+
+    .launch-screen-card:hover {
+      border-color: #00f2fe;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 242, 254, 0.2);
+    }
+
+    .launch-img-preview {
+      width: 70px;
+      height: 105px;
+      object-fit: contain;
+      background: #0d1b2a;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 8px;
+    }
+
+    .launch-screen-name {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #f1f5f9;
+      text-align: center;
+    }
+
+    .launch-screen-sub {
+      font-size: 0.7rem;
+      color: #94a3b8;
+      text-align: center;
+      margin-top: 2px;
+    }
+
+    .submitBtn {
+      max-width: 280px;
+      margin-top: 25px;
+      background: linear-gradient(135deg, #00f2fe, #4facfe);
+      color: #0f172a;
+    }
+
+    .loader {
+      display: inline-block;
+      width: 1.2em; height: 1.2em;
+      border: 2.5px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-left-color: #ffffff;
+      animation: loader-rotate 0.6s linear infinite;
+    }
+
+    .hidden { display: none !important; }
+
+    footer {
+      margin-top: 3rem;
+      padding-bottom: 2rem;
+    }
+
+    .footer-text {
+      font-size: 1rem;
+      font-weight: 600;
+      text-align: center;
+      color: #cbd5e1;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="navbar">
+      <span class="text-effect" style="font-weight: 800; font-size: 1.25rem;">EditIPA Studio</span>
+    </div>
+  </header>
+
+  <main>
+    <div class="main-content">
+      <h1 class="text-effect">EditIPA</h1>
+      <p class="text-large">
+        A simple tool to edit IPAs directly in browser.<br>
+        Extracts app properties, resizes app icons, and customizes boot screens.
+      </p>
+    </div>
+
+    <div class="upload-section">
+      <input type="file" id="file-upload" accept=".ipa" style="display: none" onchange="handleFileUpload(event)">
+      <button class="btn" onclick="document.getElementById('file-upload').click();">
+        Upload IPA <span id="loader" class="loader hidden"></span>
+      </button>
+    </div>
+
+    <div class="editorDiv">
+      <h2 class="text-effect editTitle">Editor</h2>
+      <p id="placeholder" class="editPlaceholder">Upload an IPA file to start editing</p>
+      <p id="editProcessStatus" class="text-effect hidden"></p>
+
+      <form id="plist-form" class="hidden" onsubmit="handleFormSubmit(event)">
+        <div class="editBody">
+          
+          <div class="section-title">App Icon</div>
+          <div class="editEntry">
+            <div class="icon-wrapper" onclick="document.getElementById('icon-input').click();">
+              <img id="app-icon" width="100" height="100" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='%232d3748'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%23a0aec0' font-size='12'>No Icon</text></svg>">
+              <div class="icon-overlay">Change</div>
+            </div>
+            <span class="icon-hint">Click icon to change</span>
+            <input type="file" id="icon-input" accept="image/png,image/jpeg" style="display: none;" onchange="handleIconChange(event)">
+          </div>
+
+          <div class="section-title">App Details</div>
+
+          <div class="form-group">
+            <label for="display-name">Display Name (CFBundleDisplayName)</label>
+            <input id="display-name" class="form-control" required>
+          </div>
+
+          <div class="form-group">
+            <label for="bundle-identifier">Bundle Identifier (CFBundleIdentifier)</label>
+            <input id="bundle-identifier" class="form-control" required>
+          </div>
+
+          <div class="form-group">
+            <label for="bundle-name">Bundle Name (CFBundleName)</label>
+            <input id="bundle-name" class="form-control" required>
+          </div>
+
+          <div class="form-group">
+            <label for="bundle-version">Bundle Version (CFBundleVersion)</label>
+            <input id="bundle-version" class="form-control" required>
+          </div>
+
+          <div class="form-group">
+            <label for="short-version-string">Short Version String (CFBundleShortVersionString)</label>
+            <input id="short-version-string" class="form-control" required>
+          </div>
+
+          <div class="form-group">
+            <label for="min-ios-version">Minimum iOS Version (MinimumOSVersion)</label>
+            <input id="min-ios-version" class="form-control" required>
+          </div>
+
+          <!-- Boot / Splash Screens Section -->
+          <div id="launch-screen-section" class="hidden" style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+            <div class="section-title">Boot / Splash Screen</div>
+            <p style="font-size: 0.85rem; color: #cbd5e1; width: 85%; text-align: left; margin-top: -0.5rem; margin-bottom: 1rem;">
+              Click any slot to swap boot images. iPad Portrait, iPad Landscape, and iPhone 4" (iPhone 5 and up) are shown by default.
+            </p>
+
+            <div id="launch-screens-grid" class="launch-screens-grid"></div>
+
+            <button type="button" id="toggle-35-btn" class="btn-secondary" onclick="toggle35Slot()">+ Add 3.5" Boot Screen Slot (iPhone 4 / Legacy)</button>
+
+            <input type="file" id="launch-screen-file-input" accept="image/png,image/jpeg" style="display: none;" onchange="handleLaunchScreenFileSelect(event)">
+          </div>
+
+          <button type="submit" class="btn submitBtn">Export & Save IPA</button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <footer>
+    <p class="text-effect footer-text">Made by Jeremy</p>
+  </footer>
+
+  <script>
+    let currentZip = null;
+    let plistObj = {};
+    let plistPath = null;
+    let uploadedImageElement = null;
+    let explicitIconTargetFiles = [];
+    let detectedLaunchFiles = [];
+    let activeCategories = [];
+    let selectedCategoryTarget = null;
+    let categoryReplacements = {};
+    let is35SlotAdded = false;
+
+    const CORE_LAUNCH_CATEGORIES = [
+      { id: "ipad_port", name: "iPad Portrait", sub: "768x1024", match: /Portrait/i, defaultW: 768, defaultH: 1024 },
+      { id: "ipad_land", name: "iPad Landscape", sub: "1024x768", match: /Landscape/i, defaultW: 1024, defaultH: 768 },
+      { id: "iphone_568", name: "iPhone 4\"", sub: "640x1136 (iPhone 5+)", match: /-568h|640x1136/i, defaultW: 640, defaultH: 1136 }
+    ];
+
+    const OPTIONAL_35_CATEGORY = {
+      id: "iphone_35",
+      name: "iPhone 3.5\"",
+      sub: "640x960 (iPhone 4/4S)",
+      match: /Default(@2x)?\.png$|Default-Portrait~ipad\.png/i,
+      defaultW: 640,
+      defaultH: 960
+    };
+
+    // Helper to render image Uint8Array/Base64 handling CgBI Apple PNG fallback safely
+    async function getSafePreviewDataUrl(zipFileEntry) {
+      if (!zipFileEntry) return null;
+      try {
+        const base64 = await zipFileEntry.async("base64");
+        return "data:image/png;base64," + base64;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function objectToPlistXml(obj) {
+      function serializeValue(val) {
+        if (typeof val === 'boolean') {
+          return val ? '<true/>' : '<false/>';
+        } else if (typeof val === 'number') {
+          return Number.isInteger(val) ? `<integer>${val}</integer>` : `<real>${val}</real>`;
+        } else if (typeof val === 'string') {
+          const escaped = val.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          return `<string>${escaped}</string>`;
+        } else if (Array.isArray(val)) {
+          return `<array>${val.map(serializeValue).join('')}</array>`;
+        } else if (typeof val === 'object' && val !== null) {
+          let keys = Object.keys(val);
+          let dict = keys.map(k => `<key>${k}</key>${serializeValue(val[k])}`).join('');
+          return `<dict>${dict}</dict>`;
+        }
+        return '<string></string>';
+      }
+
+      return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+${serializeValue(obj)}
+</plist>`;
+    }
+
+    function parseXmlPlist(xmlString) {
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+      
+      function nodeToValue(node) {
+        if (!node) return null;
+        const tag = node.tagName;
+        if (tag === 'dict') {
+          const res = {};
+          let currentKey = null;
+          for (let child of node.children) {
+            if (child.tagName === 'key') {
+              currentKey = child.textContent.trim();
+            } else if (currentKey) {
+              res[currentKey] = nodeToValue(child);
+              currentKey = null;
+            }
+          }
+          return res;
+        } else if (tag === 'array') {
+          return Array.from(node.children).map(nodeToValue);
+        } else if (tag === 'string') {
+          return node.textContent;
+        } else if (tag === 'true') {
+          return true;
+        } else if (tag === 'false') {
+          return false;
+        } else if (tag === 'integer' || tag === 'real') {
+          return Number(node.textContent);
+        }
+        return node.textContent;
+      }
+
+      const rootDict = xmlDoc.querySelector('plist > dict');
+      return rootDict ? nodeToValue(rootDict) : {};
+    }
+
+    function resizeImageToBlob(imgElement, width, height) {
+      return new Promise((resolve) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(imgElement, 0, 0, width, height);
+        canvas.toBlob((blob) => {
+          blob.arrayBuffer().then(resolve);
+        }, 'image/png');
+      });
+    }
+
+    async function handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      document.getElementById('loader').classList.remove('hidden');
+      document.getElementById('placeholder').innerText = "Parsing Info.plist from IPA...";
+      detectedLaunchFiles = [];
+      explicitIconTargetFiles = [];
+      categoryReplacements = {};
+      is35SlotAdded = false;
+      document.getElementById('toggle-35-btn').innerText = "+ Add 3.5\" Boot Screen Slot (iPhone 4 / Legacy)";
+
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        currentZip = await JSZip.loadAsync(arrayBuffer);
+        
+        let foundPath = null;
+        currentZip.forEach((relativePath) => {
+          if (relativePath.match(/Info\.plist$/i) && relativePath.includes('.app/')) {
+            if (!foundPath || relativePath.length < foundPath.length) {
+              foundPath = relativePath;
+            }
+          }
+        });
+
+        if (!foundPath) {
+          throw new Error("Could not find any Info.plist inside the app bundle.");
+        }
+
+        plistPath = foundPath;
+        const plistUint8 = await currentZip.file(plistPath).async("uint8array");
+
+        try {
+          if (window.bplistParser) {
+            plistObj = bplistParser.parseBuffer(plistUint8)[0];
+          } else {
+            throw new Error("bplistParser unavailable");
+          }
+        } catch (e) {
+          try {
+            const decoder = new TextDecoder("utf-8");
+            plistObj = parseXmlPlist(decoder.decode(plistUint8));
+          } catch (xmlErr) {
+            plistObj = { CFBundleDisplayName: file.name.replace(/\.ipa$/i, ''), CFBundleIdentifier: "com.legacy.app" };
+          }
+        }
+
+        if (!plistObj || typeof plistObj !== 'object') {
+          plistObj = { CFBundleDisplayName: file.name.replace(/\.ipa$/i, '') };
+        }
+
+        document.getElementById('display-name').value = plistObj.CFBundleDisplayName || plistObj.CFBundleName || file.name.replace(/\.ipa$/i, '');
+        document.getElementById('bundle-identifier').value = plistObj.CFBundleIdentifier || "com.legacy.app";
+        document.getElementById('bundle-name').value = plistObj.CFBundleName || file.name.replace(/\.ipa$/i, '');
+        document.getElementById('bundle-version').value = plistObj.CFBundleVersion || "1.0";
+        document.getElementById('short-version-string').value = plistObj.CFBundleShortVersionString || "1.0";
+        document.getElementById('min-ios-version').value = plistObj.MinimumOSVersion || "6.0";
+
+        const appPrefix = plistPath.substring(0, plistPath.lastIndexOf('Info.plist'));
+
+        // Extract declared icon names from Info.plist
+        let plistIconNames = [];
+        const extractPlistIcons = (dict) => {
+          if (!dict) return;
+          const primary = dict.CFBundlePrimaryIcon || dict['CFBundlePrimaryIcon'];
+          if (primary) {
+            let files = primary.CFBundleIconFiles || primary['CFBundleIconFiles'];
+            if (Array.isArray(files)) files.forEach(f => plistIconNames.push(f));
+          }
+        };
+        extractPlistIcons(plistObj.CFBundleIcons);
+        extractPlistIcons(plistObj['CFBundleIcons~ipad']);
+        if (Array.isArray(plistObj.CFBundleIconFiles)) {
+          plistObj.CFBundleIconFiles.forEach(f => plistIconNames.push(f));
+        }
+
+        currentZip.forEach((relativePath) => {
+          const fileName = relativePath.replace(appPrefix, '');
+          if (relativePath.startsWith(appPrefix)) {
+            let isDeclaredIcon = plistIconNames.some(name => fileName.includes(name));
+            let isClassicAppIcon = fileName.match(/^(Icon(@2x|~ipad)?|AppIcon.*)\.png$/i);
+
+            if ((isDeclaredIcon || isClassicAppIcon) && !fileName.includes('framework') && !fileName.includes('plugin')) {
+              explicitIconTargetFiles.push(fileName);
+            }
+
+            if (fileName.match(/Default.*\.png$/i) || fileName.match(/LaunchImage.*\.png$/i) || fileName.match(/splash.*\.png$/i)) {
+              detectedLaunchFiles.push({ fullPath: relativePath, name: fileName });
+            }
+          }
+        });
+
+        if (explicitIconTargetFiles.length === 0) {
+          currentZip.forEach((relativePath) => {
+            const fileName = relativePath.replace(appPrefix, '');
+            if (relativePath.startsWith(appPrefix) && fileName.endsWith('.png') && (fileName.toLowerCase().includes('icon') || fileName.toLowerCase().includes('cfbundle'))) {
+              if (!fileName.includes('framework') && !fileName.includes('facebook') && !fileName.includes('twitter')) {
+                explicitIconTargetFiles.push(fileName);
+              }
+            }
+          });
+        }
+
+        // Preview App Icon
+        let iconThumbEntry = null;
+        for (const iconFile of explicitIconTargetFiles) {
+          if (iconFile.includes('60x60@2x') || iconFile.includes('114x114') || iconFile.includes('Icon@2x.png') || iconFile.includes('Icon.png')) {
+            iconThumbEntry = currentZip.file(appPrefix + iconFile);
+            break;
+          }
+        }
+        if (!iconThumbEntry && explicitIconTargetFiles.length > 0) {
+          iconThumbEntry = currentZip.file(appPrefix + explicitIconTargetFiles[0]);
+        }
+
+        if (iconThumbEntry) {
+          const srcUrl = await getSafePreviewDataUrl(iconThumbEntry);
+          if (srcUrl) document.getElementById('app-icon').src = srcUrl;
+        }
+
+        renderLaunchScreenGrid();
+
+        document.getElementById('loader').classList.add('hidden');
+        document.getElementById('placeholder').classList.add('hidden');
+        document.getElementById('plist-form').classList.remove('hidden');
+
+      } catch (err) {
+        alert("Error loading IPA: " + err.message);
+        document.getElementById('loader').classList.add('hidden');
+        document.getElementById('placeholder').innerText = "Failed to parse IPA.";
+      }
+    }
+
+    async function renderLaunchScreenGrid() {
+      const gridContainer = document.getElementById('launch-screens-grid');
+      gridContainer.innerHTML = '';
+      activeCategories = [];
+
+      let categoriesToUse = [...CORE_LAUNCH_CATEGORIES];
+      if (is35SlotAdded) {
+        categoriesToUse.push(OPTIONAL_35_CATEGORY);
+      }
+
+      for (const cat of categoriesToUse) {
+        const matches = detectedLaunchFiles.filter(item => cat.match.test(item.name));
+        const catGroup = { category: cat, matches: matches.length > 0 ? matches : detectedLaunchFiles };
+        activeCategories.push(catGroup);
+
+        const card = document.createElement('div');
+        card.className = 'launch-screen-card';
+        card.onclick = () => triggerLaunchScreenUpload(cat.id);
+
+        const img = document.createElement('img');
+        img.className = 'launch-img-preview';
+        img.id = 'launch-preview-' + cat.id;
+
+        if (matches.length > 0) {
+          const zipEntry = currentZip.file(matches[0].fullPath);
+          const srcUrl = await getSafePreviewDataUrl(zipEntry);
+          img.src = srcUrl || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='70' height='105'><rect width='70' height='105' fill='%231e293b'/></svg>";
+        } else {
+          img.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='70' height='105'><rect width='70' height='105' fill='%231e293b'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%2300f2fe' font-size='10'>Custom</text></svg>";
+        }
+
+        const label = document.createElement('span');
+        label.className = 'launch-screen-name';
+        label.innerText = cat.name;
+
+        const sub = document.createElement('span');
+        sub.className = 'launch-screen-sub';
+        sub.innerText = cat.sub;
+
+        card.appendChild(img);
+        card.appendChild(label);
+        card.appendChild(sub);
+        gridContainer.appendChild(card);
+      }
+
+      document.getElementById('launch-screen-section').classList.remove('hidden');
+    }
+
+    function toggle35Slot() {
+      is35SlotAdded = !is35SlotAdded;
+      const btn = document.getElementById('toggle-35-btn');
+      if (is35SlotAdded) {
+        btn.innerText = "- Remove 3.5\" Boot Screen Slot";
+      } else {
+        btn.innerText = "+ Add 3.5\" Boot Screen Slot (iPhone 4 / Legacy)";
+      }
+      renderLaunchScreenGrid();
+    }
+
+    function triggerLaunchScreenUpload(categoryId) {
+      selectedCategoryTarget = categoryId;
+      document.getElementById('launch-screen-file-input').click();
+    }
+
+    function handleLaunchScreenFileSelect(event) {
+      const file = event.target.files[0];
+      if (file && selectedCategoryTarget) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById('launch-preview-' + selectedCategoryTarget).src = e.target.result;
+          const img = new Image();
+          img.src = e.target.result;
+          img.onload = () => {
+            categoryReplacements[selectedCategoryTarget] = img;
+          };
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    async function handleIconChange(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById('app-icon').src = e.target.result;
+          const img = new Image();
+          img.src = e.target.result;
+          img.onload = () => {
+            uploadedImageElement = img;
+          };
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    async function handleFormSubmit(event) {
+      event.preventDefault();
+      if (!currentZip || !plistObj) {
+        alert("Upload an IPA first!");
+        return;
+      }
+
+      const statusEl = document.getElementById('editProcessStatus');
+      statusEl.classList.remove('hidden');
+      statusEl.innerText = "Resizing assets and updating Info.plist...";
+
+      plistObj.CFBundleDisplayName = document.getElementById('display-name').value;
+      plistObj.CFBundleIdentifier = document.getElementById('bundle-identifier').value;
+      plistObj.CFBundleName = document.getElementById('bundle-name').value;
+      plistObj.CFBundleVersion = document.getElementById('bundle-version').value;
+      plistObj.CFBundleShortVersionString = document.getElementById('short-version-string').value;
+      plistObj.MinimumOSVersion = document.getElementById('min-ios-version').value;
+
+      const appPrefix = plistPath.substring(0, plistPath.lastIndexOf('Info.plist'));
+
+      if (uploadedImageElement) {
+        const standardIconSizes = [
+          { name: "AppIcon60x60@2x.png", size: 120 },
+          { name: "AppIcon60x60@3x.png", size: 180 },
+          { name: "AppIcon76x76@2x~ipad.png", size: 152 },
+          { name: "AppIcon83.5x83.5@2x~ipad.png", size: 167 },
+          { name: "ItunesArtwork.png", size: 1024 },
+          { name: "iTunesArtwork@2x.png", size: 1024 }
+        ];
+
+        for (const target of standardIconSizes) {
+          const resizedBuffer = await resizeImageToBlob(uploadedImageElement, target.size, target.size);
+          currentZip.file(appPrefix + target.name, resizedBuffer);
+        }
+
+        for (const iconFileName of explicitIconTargetFiles) {
+          let targetSize = 180;
+          if (iconFileName.includes('2x')) targetSize = 120;
+          if (iconFileName.includes('3x')) targetSize = 180;
+          if (iconFileName.includes('76')) targetSize = 152;
+          if (iconFileName.includes('1024')) targetSize = 1024;
+
+          const resizedBuffer = await resizeImageToBlob(uploadedImageElement, targetSize, targetSize);
+          currentZip.file(appPrefix + iconFileName, resizedBuffer);
+        }
+
+        plistObj.CFBundleIcons = {
+          CFBundlePrimaryIcon: {
+            CFBundleIconFiles: ["AppIcon60x60"],
+            CFBundleIconName: "AppIcon"
+          }
+        };
+      }
+
+      for (const [catId, replacementImg] of Object.entries(categoryReplacements)) {
+        const categoryGroup = activeCategories.find(k => k.category.id === catId);
+        if (categoryGroup) {
+          const filesToUpdate = categoryGroup.matches.length > 0 ? categoryGroup.matches : detectedLaunchFiles;
+
+          for (const targetFile of filesToUpdate) {
+            let targetW = categoryGroup.category.defaultW;
+            let targetH = categoryGroup.category.defaultH;
+
+            if (targetFile.name.match(/Default\.png$/i)) { targetW = 320; targetH = 480; }
+            else if (targetFile.name.match(/Default@2x\.png$/i)) { targetW = 640; targetH = 960; }
+            else if (targetFile.name.match(/-568h/i)) { targetW = 640; targetH = 1136; }
+            else if (targetFile.name.match(/Portrait/i)) { targetW = 768; targetH = 1024; }
+            else if (targetFile.name.match(/Landscape/i)) { targetW = 1024; targetH = 768; }
+
+            const splashBuffer = await resizeImageToBlob(replacementImg, targetW, targetH);
+            currentZip.file(targetFile.fullPath, splashBuffer);
+          }
+        }
+      }
+
+      const updatedXml = objectToPlistXml(plistObj);
+      currentZip.file(plistPath, updatedXml);
+
+      statusEl.innerText = "Re-archiving IPA file...";
+      const blob = await currentZip.generateAsync({ type: "blob", mimeType: "application/octet-stream" });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (plistObj.CFBundleDisplayName || "modified") + ".ipa";
+      a.click();
+
+      statusEl.innerText = "IPA updated & downloaded successfully!";
+      setTimeout(() => statusEl.classList.add('hidden'), 4000);
+    }
+  </script>
+</body>
+</html>
