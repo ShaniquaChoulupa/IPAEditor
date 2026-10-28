@@ -93,7 +93,7 @@
   <header class="flex justify-center pt-4 pb-2 px-4">
     <div class="px-6 py-3 flex items-center justify-between bg-white/80 backdrop-blur-md border-2 border-white/90 rounded-full shadow-lg max-w-4xl w-full">
       <div class="flex items-center space-x-2 text-xs font-bold text-slate-700">
-        <span class="px-3 py-1 bg-pink-100 text-pink-700 rounded-full border border-pink-200">v4.0</span>
+        <span class="px-3 py-1 bg-pink-100 text-pink-700 rounded-full border border-pink-200">v4.2</span>
       </div>
       <div class="text-effect font-extrabold text-xl tracking-tight text-center">
         IPA Editor & Injector
@@ -668,6 +668,27 @@ ${serializeValue(obj)}
       });
     }
 
+    // Parse exact pixel dimensions from file name strings like AppIcon60x60@2x.png or AppIcon83.5x83.5@2x~ipad.png
+    function parseIconDimension(filename) {
+      let baseSize = 60;
+      let scale = 1;
+
+      const dimMatch = filename.match(/(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)/i);
+      if (dimMatch && dimMatch[1]) {
+        baseSize = parseFloat(dimMatch[1]);
+      } else {
+        const simpleDim = filename.match(/-(20|29|32|40|50|57|60|72|76|83\.5|1024|120|152|180|512)/i);
+        if (simpleDim && simpleDim[1]) baseSize = parseFloat(simpleDim[1]);
+      }
+
+      const scaleMatch = filename.match(/@(\d+)x/i);
+      if (scaleMatch && scaleMatch[1]) {
+        scale = parseInt(scaleMatch[1], 10);
+      }
+
+      return Math.round(baseSize * scale);
+    }
+
     async function handleFileUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -714,26 +735,14 @@ ${serializeValue(obj)}
         const archType = await detectBinaryArchitecture(appPrefix, mainExecName);
         document.getElementById('arch-badge').innerText = archType;
 
-        let plistIconNames = [];
-        const extractPlistIcons = (dict) => {
-          if (!dict || typeof dict !== 'object') return;
-          const primary = getPlistKey(dict, 'CFBundlePrimaryIcon');
-          if (primary && typeof primary === 'object') {
-            let files = getPlistKey(primary, 'CFBundleIconFiles');
-            if (Array.isArray(files)) files.forEach(f => plistIconNames.push(f));
-          }
-        };
-        extractPlistIcons(getPlistKey(plistObj, 'CFBundleIcons'));
-        extractPlistIcons(getPlistKey(plistObj, 'CFBundleIcons~ipad'));
-        const directIcons = getPlistKey(plistObj, 'CFBundleIconFiles');
-        if (Array.isArray(directIcons)) directIcons.forEach(f => plistIconNames.push(f));
-
+        // Catch every single PNG in .app folder that starts with AppIcon or Icon, or contains icon
+        explicitIconTargetFiles = [];
         currentZip.forEach((relativePath) => {
-          const fileName = relativePath.replace(appPrefix, '');
-          if (relativePath.startsWith(appPrefix)) {
-            let isDeclaredIcon = plistIconNames.some(name => fileName.includes(name));
-            let isClassicAppIcon = fileName.match(/^(Icon(@2x|~ipad)?|AppIcon.*)\.png$/i);
-            if ((isDeclaredIcon || isClassicAppIcon) && !fileName.includes('framework')) explicitIconTargetFiles.push(fileName);
+          if (relativePath.startsWith(appPrefix) && relativePath.endsWith('.png')) {
+            const fileName = relativePath.replace(appPrefix, '');
+            if (fileName.match(/^(AppIcon|Icon|.*icon.*)/i) && !fileName.includes('framework')) {
+              explicitIconTargetFiles.push(fileName);
+            }
             if (fileName.match(/Default.*\.png$/i) || fileName.match(/LaunchImage.*\.png$/i) || fileName.match(/splash.*\.png$/i)) {
               detectedLaunchFiles.push({ fullPath: relativePath, name: fileName });
             }
@@ -894,7 +903,7 @@ ${serializeValue(obj)}
         tl: { x: cropBox.x, y: cropBox.y },
         tr: { x: cropBox.x + cropBox.w, y: cropBox.y },
         bl: { x: cropBox.x, y: cropBox.y + cropBox.h },
-        br: { x: cropBox.x + cropBox.w, y: cropBox.y + cropBox.h },
+        br: { x: cropBox.x, y: cropBox.y + cropBox.h/2 },
         t:  { x: cropBox.x + cropBox.w/2, y: cropBox.y },
         b:  { x: cropBox.x + cropBox.w/2, y: cropBox.y + cropBox.h },
         l:  { x: cropBox.x, y: cropBox.y + cropBox.h/2 },
@@ -1026,13 +1035,14 @@ ${serializeValue(obj)}
     }
 
     function renderInjectorList() {
-      const listContainer = document.getElementById('injector-list');
+      const listContainer = document.innerHTML = '';
+      const container = document.getElementById('injector-list');
       if (injectionQueue.length === 0) {
-        listContainer.innerHTML = `<p class="text-xs font-bold text-slate-400 italic">No dylibs or debs queued for injection.</p>`;
+        container.innerHTML = `<p class="text-xs font-bold text-slate-400 italic">No dylibs or debs queued for injection.</p>`;
         return;
       }
 
-      listContainer.innerHTML = '';
+      container.innerHTML = '';
       injectionQueue.forEach((item, index) => {
         const row = document.createElement('div');
         row.className = "flex items-center justify-between bg-white/90 p-3 rounded-xl border border-pink-200 shadow-sm";
@@ -1043,7 +1053,7 @@ ${serializeValue(obj)}
           </div>
           <button onclick="removeInjectedItem(${index})" class="text-xs font-bold text-rose-500 hover:text-rose-700">Remove</button>
         `;
-        listContainer.appendChild(row);
+        container.appendChild(row);
       });
     }
 
@@ -1074,47 +1084,66 @@ ${serializeValue(obj)}
 
         const appPrefix = plistPath.substring(0, plistPath.lastIndexOf('Info.plist'));
 
-        // ICON OVERRIDE & ASSETS.CAR CONFLICT PURGE
+        // OVERWRITE ALL EXISTING ICON FILES DISCOVERED IN THE ZIP
         if (uploadedIconImage) {
-          // Remove compiled assets catalog so iOS doesn't override loose icon files
+          // 1. Remove Assets.car compiled catalogs if any
           currentZip.forEach((relativePath) => {
             if (relativePath.startsWith(appPrefix) && relativePath.endsWith('Assets.car')) {
               currentZip.remove(relativePath);
             }
           });
 
-          // Standard loose icons recognized directly by iOS SpringBoard
-          const iconTargets = [
-            { name: 'Icon.png', dim: 57 },
-            { name: 'Icon@2x.png', dim: 114 },
-            { name: 'Icon-60.png', dim: 60 },
-            { name: 'Icon-60@2x.png', dim: 120 },
-            { name: 'Icon-60@3x.png', dim: 180 },
-            { name: 'Icon-76.png', dim: 76 },
-            { name: 'Icon-76@2x.png', dim: 152 },
-            { name: 'Icon-120.png', dim: 120 },
-            { name: 'Icon-180.png', dim: 180 }
-          ];
-
-          for (const target of iconTargets) {
-            const pngBuf = await convertAndResizeImageToPngBlob(uploadedIconImage, target.dim, target.dim);
-            currentZip.file(appPrefix + target.name, pngBuf);
+          // 2. Target EVERY PNG icon file in the app bundle payload
+          if (explicitIconTargetFiles.length > 0) {
+            for (const iconFile of explicitIconTargetFiles) {
+              const dim = parseIconDimension(iconFile);
+              const pngBuffer = await convertAndResizeImageToPngBlob(uploadedIconImage, dim, dim);
+              currentZip.file(appPrefix + iconFile, pngBuffer);
+            }
           }
 
-          // Point CFBundleIconFiles directly to the loose icons
-          plistObj['CFBundleIconFiles'] = [
-            'Icon.png',
-            'Icon@2x.png',
-            'Icon-60.png',
-            'Icon-60@2x.png',
-            'Icon-60@3x.png',
-            'Icon-76.png',
-            'Icon-76@2x.png'
+          // 3. Fallback set of standard loose icons
+          const standardIconTargets = [
+            { file: 'AppIcon20x20@2x.png', dim: 40 },
+            { file: 'AppIcon20x20@3x.png', dim: 60 },
+            { file: 'AppIcon29x29.png', dim: 29 },
+            { file: 'AppIcon29x29@2x.png', dim: 58 },
+            { file: 'AppIcon29x29@3x.png', dim: 87 },
+            { file: 'AppIcon40x40@2x.png', dim: 80 },
+            { file: 'AppIcon40x40@3x.png', dim: 120 },
+            { file: 'AppIcon60x60@2x.png', dim: 120 },
+            { file: 'AppIcon60x60@3x.png', dim: 180 },
+            { file: 'AppIcon76x76@2x~ipad.png', dim: 152 },
+            { file: 'AppIcon83.5x83.5@2x~ipad.png', dim: 167 },
+            { file: 'Icon-57.png', dim: 57 },
+            { file: 'Icon-72.png', dim: 72 },
+            { file: 'Icon-144.png', dim: 144 },
+            { file: 'Icon-512.png', dim: 512 }
           ];
 
-          // Clear conflicting CFBundleIcons dictionary structures if present
-          delete plistObj['CFBundleIcons'];
-          delete plistObj['CFBundleIcons~ipad'];
+          for (const target of standardIconTargets) {
+            const pngBuf = await convertAndResizeImageToPngBlob(uploadedIconImage, target.dim, target.dim);
+            currentZip.file(appPrefix + target.file, pngBuf);
+          }
+
+          // 4. Clean CFBundleIcons in plist to reference extensionless icon names
+          const extensionlessBaseNames = ['AppIcon20x20', 'AppIcon29x29', 'AppIcon40x40', 'AppIcon60x60', 'AppIcon76x76', 'AppIcon83.5x83.5', 'Icon-57', 'Icon-72', 'Icon-144'];
+          
+          plistObj['CFBundleIcons'] = {
+            'CFBundlePrimaryIcon': {
+              'CFBundleIconFiles': extensionlessBaseNames,
+              'CFBundleIconName': 'AppIcon'
+            }
+          };
+
+          plistObj['CFBundleIcons~ipad'] = {
+            'CFBundlePrimaryIcon': {
+              'CFBundleIconFiles': extensionlessBaseNames,
+              'CFBundleIconName': 'AppIcon'
+            }
+          };
+
+          plistObj['CFBundleIconFiles'] = extensionlessBaseNames;
         }
 
         const updatedXmlPlist = objectToPlistXml(plistObj);
