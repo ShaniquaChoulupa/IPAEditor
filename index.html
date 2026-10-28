@@ -93,7 +93,7 @@
   <header class="flex justify-center pt-4 pb-2 px-4">
     <div class="px-6 py-3 flex items-center justify-between bg-white/80 backdrop-blur-md border-2 border-white/90 rounded-full shadow-lg max-w-4xl w-full">
       <div class="flex items-center space-x-2 text-xs font-bold text-slate-700">
-        <span class="px-3 py-1 bg-pink-100 text-pink-700 rounded-full border border-pink-200">v3.8</span>
+        <span class="px-3 py-1 bg-pink-100 text-pink-700 rounded-full border border-pink-200">v4.0</span>
       </div>
       <div class="text-effect font-extrabold text-xl tracking-tight text-center">
         IPA Editor & Injector
@@ -287,7 +287,6 @@
 
   <!-- Plist Parsing & Application Logic -->
   <script>
-    // FULL FEATURED BPLIST & XML DECODER
     function parsePlistBuffer(buffer) {
       const uint8 = new Uint8Array(buffer);
       const magic = String.fromCharCode.apply(null, uint8.subarray(0, 8));
@@ -299,7 +298,7 @@
         try {
           parsed = parseBplist(uint8);
         } catch (err) {
-          console.warn("bplist structured parse error, falling back to deep regex scan:", err);
+          console.warn("bplist parse error:", err);
         }
       } else {
         try {
@@ -329,13 +328,11 @@
         } catch (e) {}
       }
 
-      // Fallback deep scan reader for missing primary keys in binary or obfuscated plists
       const extractField = (keys) => {
         for (const k of keys) {
           if (parsed[k] !== undefined && parsed[k] !== null && String(parsed[k]).trim() !== "") {
             return String(parsed[k]).trim();
           }
-          // Search raw ASCII bytes
           const asciiDec = new TextDecoder("ascii", { fatal: false }).decode(uint8);
           const idx = asciiDec.indexOf(k);
           if (idx !== -1) {
@@ -347,18 +344,19 @@
         return null;
       };
 
-      return {
-        CFBundleIdentifier: extractField(['CFBundleIdentifier', 'CFBundleID']) || "com.legacy.app",
-        CFBundleDisplayName: extractField(['CFBundleDisplayName', 'CFBundleName']) || "App",
-        CFBundleName: extractField(['CFBundleName']) || "App",
-        CFBundleVersion: extractField(['CFBundleVersion']) || "1.0",
-        CFBundleShortVersionString: extractField(['CFBundleShortVersionString']) || "1.0",
-        MinimumOSVersion: extractField(['MinimumOSVersion']) || "6.0",
-        CFBundleExecutable: extractField(['CFBundleExecutable'])
-      };
+      if (typeof parsed !== 'object' || parsed === null) parsed = {};
+
+      parsed['CFBundleIdentifier'] = extractField(['CFBundleIdentifier', 'CFBundleID']) || parsed['CFBundleIdentifier'] || "com.legacy.app";
+      parsed['CFBundleDisplayName'] = extractField(['CFBundleDisplayName', 'CFBundleName']) || parsed['CFBundleDisplayName'] || "App";
+      parsed['CFBundleName'] = extractField(['CFBundleName']) || parsed['CFBundleName'] || "App";
+      parsed['CFBundleVersion'] = extractField(['CFBundleVersion']) || parsed['CFBundleVersion'] || "1.0";
+      parsed['CFBundleShortVersionString'] = extractField(['CFBundleShortVersionString']) || parsed['CFBundleShortVersionString'] || "1.0";
+      parsed['MinimumOSVersion'] = extractField(['MinimumOSVersion']) || parsed['MinimumOSVersion'] || "6.0";
+      parsed['CFBundleExecutable'] = extractField(['CFBundleExecutable']) || parsed['CFBundleExecutable'];
+
+      return parsed;
     }
 
-    // Binary Plist (bplist00) Binary Structure Reader
     function parseBplist(uint8) {
       const view = new DataView(uint8.buffer, uint8.byteOffset, uint8.byteLength);
       const trailerOffset = uint8.length - 32;
@@ -387,14 +385,12 @@
         const objType = marker & 0xf0;
         const objInfo = marker & 0x0f;
 
-        // Integer
         if (objType === 0x10) {
           const length = 1 << objInfo;
           let val = 0;
           for (let i = 0; i < length; i++) val = (val * 256) + uint8[offset + 1 + i];
           return val;
         }
-        // String (ASCII / UTF-8)
         if (objType === 0x50 || objType === 0x60) {
           let length = objInfo;
           let dataOffset = offset + 1;
@@ -408,13 +404,11 @@
           const sub = uint8.subarray(dataOffset, dataOffset + length);
           return new TextDecoder(objType === 0x60 ? "utf-16be" : "utf-8", { fatal: false }).decode(sub);
         }
-        // Array
         if (objType === 0xa0) {
           let count = objInfo;
           let dataOffset = offset + 1;
           if (objInfo === 0x0f) {
-            // Read length int
-            count = uint8[offset + 1]; // Simplified
+            count = uint8[offset + 1];
             dataOffset = offset + 2;
           }
           const arr = [];
@@ -424,7 +418,6 @@
           }
           return arr;
         }
-        // Dict
         if (objType === 0xd0) {
           let count = objInfo;
           let dataOffset = offset + 1;
@@ -1081,51 +1074,47 @@ ${serializeValue(obj)}
 
         const appPrefix = plistPath.substring(0, plistPath.lastIndexOf('Info.plist'));
 
+        // ICON OVERRIDE & ASSETS.CAR CONFLICT PURGE
         if (uploadedIconImage) {
-          const mandatoryIconTargets = [
-            { name: 'AppIcon60x60@2x.png', dim: 120 },
-            { name: 'AppIcon60x60@3x.png', dim: 180 },
-            { name: 'AppIcon76x76@2x~ipad.png', dim: 152 },
-            { name: 'Icon-57.png', dim: 57 },
-            { name: 'Icon-72.png', dim: 72 },
-            { name: 'Icon-144.png', dim: 144 },
-            { name: 'Icon-512.png', dim: 512 }
+          // Remove compiled assets catalog so iOS doesn't override loose icon files
+          currentZip.forEach((relativePath) => {
+            if (relativePath.startsWith(appPrefix) && relativePath.endsWith('Assets.car')) {
+              currentZip.remove(relativePath);
+            }
+          });
+
+          // Standard loose icons recognized directly by iOS SpringBoard
+          const iconTargets = [
+            { name: 'Icon.png', dim: 57 },
+            { name: 'Icon@2x.png', dim: 114 },
+            { name: 'Icon-60.png', dim: 60 },
+            { name: 'Icon-60@2x.png', dim: 120 },
+            { name: 'Icon-60@3x.png', dim: 180 },
+            { name: 'Icon-76.png', dim: 76 },
+            { name: 'Icon-76@2x.png', dim: 152 },
+            { name: 'Icon-120.png', dim: 120 },
+            { name: 'Icon-180.png', dim: 180 }
           ];
 
-          for (const target of mandatoryIconTargets) {
+          for (const target of iconTargets) {
             const pngBuf = await convertAndResizeImageToPngBlob(uploadedIconImage, target.dim, target.dim);
             currentZip.file(appPrefix + target.name, pngBuf);
           }
 
-          if (explicitIconTargetFiles.length > 0) {
-            for (const iconFile of explicitIconTargetFiles) {
-              let dim = 120;
-              if (iconFile.includes('180x180') || iconFile.includes('60x60@3x')) dim = 180;
-              else if (iconFile.includes('167x167') || iconFile.includes('83.5x83.5@2x')) dim = 167;
-              else if (iconFile.includes('152x152') || iconFile.includes('76x76@2x')) dim = 152;
-              else if (iconFile.includes('120x120') || iconFile.includes('60x60@2x')) dim = 120;
-              else if (iconFile.includes('114x114') || iconFile.includes('57x57@2x')) dim = 114;
-              else if (iconFile.includes('76x76')) dim = 76;
-              else if (iconFile.includes('57x57') || iconFile.includes('Icon.png')) dim = 57;
+          // Point CFBundleIconFiles directly to the loose icons
+          plistObj['CFBundleIconFiles'] = [
+            'Icon.png',
+            'Icon@2x.png',
+            'Icon-60.png',
+            'Icon-60@2x.png',
+            'Icon-60@3x.png',
+            'Icon-76.png',
+            'Icon-76@2x.png'
+          ];
 
-              const pngBuffer = await convertAndResizeImageToPngBlob(uploadedIconImage, dim, dim);
-              currentZip.file(appPrefix + iconFile, pngBuffer);
-            }
-          }
-
-          plistObj['CFBundleIcons'] = {
-            'CFBundlePrimaryIcon': {
-              'CFBundleIconFiles': ['AppIcon60x60', 'Icon-57', 'Icon-72', 'Icon-144'],
-              'UIPrerenderedIcon': true
-            }
-          };
-          plistObj['CFBundleIcons~ipad'] = {
-            'CFBundlePrimaryIcon': {
-              'CFBundleIconFiles': ['AppIcon60x60', 'AppIcon76x76', 'Icon-57', 'Icon-72', 'Icon-144'],
-              'UIPrerenderedIcon': true
-            }
-          };
-          plistObj['CFBundleIconFiles'] = ['AppIcon60x60', 'Icon-57', 'Icon-72', 'Icon-144'];
+          // Clear conflicting CFBundleIcons dictionary structures if present
+          delete plistObj['CFBundleIcons'];
+          delete plistObj['CFBundleIcons~ipad'];
         }
 
         const updatedXmlPlist = objectToPlistXml(plistObj);
