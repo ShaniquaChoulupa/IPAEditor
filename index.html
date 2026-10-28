@@ -4,14 +4,12 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IPA Editor & Tweak Injector</title>
+  <title>IPA Editor & Injector</title>
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- JSZip for IPA Extraction & Repacking -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <!-- bplist-parser for reading Binary Plists -->
-  <script src="https://cdn.jsdelivr.net/npm/bplist-parser@0.2.0/bplistParser.min.js"></script>
 
   <style>
     @keyframes gradientBG {
@@ -36,7 +34,7 @@
     }
 
     .glass-card {
-      background: rgba(255, 255, 255, 0.85);
+      background: rgba(255, 255, 255, 0.82);
       -webkit-backdrop-filter: blur(20px);
       backdrop-filter: blur(20px);
       border: 2px solid rgba(255, 255, 255, 0.95);
@@ -63,13 +61,6 @@
       background: linear-gradient(135deg, #f43f5e, #0284c7);
     }
 
-    .btn-tab-active {
-      background: rgba(255, 255, 255, 0.95);
-      color: #0284c7;
-      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.15);
-      border-color: #38bdf8;
-    }
-
     .loader {
       display: inline-block;
       width: 1.2em; height: 1.2em;
@@ -79,7 +70,6 @@
       animation: loader-rotate 0.6s linear infinite;
     }
 
-    /* Custom Scrollbars */
     ::-webkit-scrollbar {
       width: 8px;
       height: 8px;
@@ -103,10 +93,10 @@
   <header class="flex justify-center pt-4 pb-2 px-4">
     <div class="px-6 py-3 flex items-center justify-between bg-white/80 backdrop-blur-md border-2 border-white/90 rounded-full shadow-lg max-w-4xl w-full">
       <div class="flex items-center space-x-2 text-xs font-bold text-slate-700">
-        <span class="px-3 py-1 bg-pink-100 text-pink-700 rounded-full border border-pink-200">v3.0 Injector</span>
+        <span class="px-3 py-1 bg-pink-100 text-pink-700 rounded-full border border-pink-200">v3.8</span>
       </div>
       <div class="text-effect font-extrabold text-xl tracking-tight text-center">
-        IPA Editor & Tweak Injector
+        IPA Editor & Injector
       </div>
       <div class="w-10"></div>
     </div>
@@ -117,9 +107,9 @@
 
     <!-- Hero Title -->
     <div class="text-center space-y-2 mt-2">
-      <h1 class="text-4xl md:text-5xl font-black text-effect tracking-tight">IPA Studio & Injector</h1>
+      <h1 class="text-4xl md:text-5xl font-black text-effect tracking-tight">IPA Editor</h1>
       <p class="text-slate-800 font-bold max-w-2xl mx-auto text-sm md:text-base">
-        Extract IPAs, edit metadata, inject dynamic libraries (.dylib) & Cydia packages (.deb), replace icons, and customize splash screens client-side.
+        Extract IPAs, edit metadata reliably, replace icons (PNG/WEBP/JPG), crop boot screens, and inject dylibs/debs.
       </p>
     </div>
 
@@ -136,19 +126,17 @@
     <!-- Main Workspace -->
     <div id="workspace" class="w-full glass-card rounded-3xl p-4 md:p-6 hidden flex flex-col space-y-6">
 
-      <!-- Navigation Bar Tabs -->
-      <div class="flex justify-center border-b border-pink-200 pb-4">
-        <div class="flex space-x-2 bg-slate-200/60 p-1.5 rounded-2xl border border-white/80">
-          <button id="tab-btn-meta" onclick="switchTab('meta')" class="px-5 py-2.5 rounded-xl font-extrabold text-xs transition-all border border-transparent btn-tab-active">
-            📝 Metadata & Assets
-          </button>
-          <button id="tab-btn-injector" onclick="switchTab('injector')" class="px-5 py-2.5 rounded-xl font-extrabold text-xs transition-all border border-transparent text-slate-600 hover:text-sky-700">
-            💉 Dylib & Deb Injector
-          </button>
-        </div>
+      <!-- Navigation Tabs -->
+      <div class="flex border-b border-pink-200">
+        <button id="tab-btn-meta" onclick="switchTab('meta')" class="px-6 py-2.5 font-bold text-sm text-sky-700 border-b-4 border-pink-400 focus:outline-none">
+          Metadata & Assets
+        </button>
+        <button id="tab-btn-inject" onclick="switchTab('inject')" class="px-6 py-2.5 font-bold text-sm text-slate-500 hover:text-sky-700 border-b-4 border-transparent focus:outline-none">
+          Dylib & Deb Injector
+        </button>
       </div>
 
-      <!-- METADATA & ASSETS TAB SECTION -->
+      <!-- METADATA & ASSETS TAB -->
       <div id="tab-content-meta" class="space-y-6">
         <form id="plist-form" onsubmit="handleFormSubmit(event)" class="space-y-6">
           
@@ -158,12 +146,12 @@
               <span class="text-xs font-extrabold uppercase tracking-wider text-slate-600">App Icon</span>
               <div class="relative group cursor-pointer" onclick="document.getElementById('icon-input').click();">
                 <img id="app-icon" width="100" height="100" class="rounded-2xl shadow-lg border-4 border-white object-cover" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='%23f1f5f9'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8' font-size='12' font-weight='bold'>No Icon</text></svg>">
-                <div class="absolute inset-0 bg-sky-500/80 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity font-bold text-white text-xs">
-                  Change Icon
+                <div class="absolute inset-0 bg-sky-500/80 rounded-2xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity font-bold text-white text-xs text-center p-1">
+                  Replace Icon
                 </div>
               </div>
-              <input type="file" id="icon-input" accept="image/png,image/jpeg" class="hidden" onchange="prepareIconCrop(event)">
-              <span class="text-[11px] font-bold text-sky-600">Click preview to replace</span>
+              <input type="file" id="icon-input" accept="image/png,image/jpeg,image/webp,image/jpg" class="hidden" onchange="handleDirectIconUpload(event)">
+              <span class="text-[11px] font-bold text-sky-600">Supports PNG, WEBP, JPG</span>
             </div>
 
             <div class="md:col-span-2 space-y-3">
@@ -218,7 +206,7 @@
           <div id="launch-screen-section" class="space-y-3">
             <h3 class="text-lg font-black text-sky-700 border-b-2 border-pink-200 pb-1">Boot & Splash Screens</h3>
             <p class="text-xs font-semibold text-slate-600">
-              Click any image card to replace its splash screen slot with a new image.
+              Click any image card to open the <strong>Freeform Cropper</strong> and adjust handles freely.
             </p>
 
             <div id="launch-screens-grid" class="flex flex-wrap gap-4 justify-center py-2"></div>
@@ -228,7 +216,7 @@
                 + Add 3.5" Boot Screen Slot (iPhone 4 / Legacy)
               </button>
             </div>
-            <input type="file" id="launch-screen-file-input" accept="image/png,image/jpeg" class="hidden" onchange="prepareSplashCrop(event)">
+            <input type="file" id="launch-screen-file-input" accept="image/png,image/jpeg,image/webp" class="hidden" onchange="prepareSplashCrop(event)">
           </div>
 
           <!-- Save Button -->
@@ -240,73 +228,27 @@
         </form>
       </div>
 
-      <!-- DYLIB & DEB INJECTOR TAB SECTION -->
-      <div id="tab-content-injector" class="space-y-6 hidden">
+      <!-- DYLIB & DEB INJECTOR TAB -->
+      <div id="tab-content-inject" class="space-y-6 hidden">
         <div class="space-y-4">
-          <div class="flex flex-col md:flex-row md:items-center md:justify-between border-b-2 border-pink-200 pb-2 gap-2">
-            <div>
-              <h3 class="text-lg font-black text-sky-700">Dynamic Library & Tweak Injector</h3>
-              <p class="text-xs font-semibold text-slate-600">Upload raw .dylib libraries or Cydia .deb tweak packages to inject into the application bundle.</p>
-            </div>
-            <span class="text-xs font-bold px-3 py-1 bg-sky-100 text-sky-800 rounded-full border border-sky-300 self-start md:self-auto">
-              Auto-Extracts .deb Data Tarball
-            </span>
-          </div>
+          <h3 class="text-lg font-black text-sky-700 border-b-2 border-pink-200 pb-1">Dylib & Deb Injection Manager</h3>
+          <p class="text-xs font-semibold text-slate-600">
+            Upload custom <code class="bg-pink-100 text-pink-700 px-1 rounded">.dylib</code> files or Debian packages (<code class="bg-pink-100 text-pink-700 px-1 rounded">.deb</code>) to inject directly into the app bundle payload.
+          </p>
 
-          <!-- Injector Drag/Drop Upload Area -->
-          <div class="border-2 border-dashed border-sky-300 hover:border-pink-400 bg-sky-50/50 hover:bg-pink-50/40 rounded-2xl p-6 text-center transition-colors cursor-pointer"
-               onclick="document.getElementById('tweak-file-input').click();"
-               ondragover="event.preventDefault();"
-               ondrop="handleTweakDrop(event);">
-            <input type="file" id="tweak-file-input" accept=".dylib,.deb" multiple class="hidden" onchange="handleTweakUpload(event)">
-            <div class="flex flex-col items-center justify-center space-y-2">
-              <span class="text-3xl">💉</span>
-              <span class="text-sm font-extrabold text-slate-800">Click or Drag & Drop .dylib or .deb Tweaks Here</span>
-              <span class="text-xs font-bold text-slate-500">Supports direct binaries (.dylib) and standard Cydia package archives (.deb)</span>
-            </div>
-          </div>
-
-          <!-- Tweak Options & Substrate Toggle -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white/80 p-4 rounded-2xl border border-pink-100">
-            <div class="flex items-center space-x-3">
-              <input type="checkbox" id="bundle-substrate-chk" checked class="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500 cursor-pointer">
-              <div>
-                <label for="bundle-substrate-chk" class="text-xs font-extrabold text-slate-800 cursor-pointer block">Include Substrate / ElleKit Compatibility</label>
-                <span class="text-[11px] font-semibold text-slate-500 block">Bundles CydiaSubstrate shim header references for hooked tweaks</span>
-              </div>
-            </div>
-            <div class="flex items-center space-x-3">
-              <label class="text-xs font-extrabold text-slate-800 whitespace-nowrap">Target Subfolder:</label>
-              <select id="inject-target-folder" class="w-full bg-white border-2 border-pink-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-sky-400">
-                <option value="Frameworks">Payload/*.app/Frameworks/ (Recommended)</option>
-                <option value="Root">Payload/*.app/ (App Bundle Root)</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Queue / Installed Tweaks List -->
-          <div class="space-y-3">
-            <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-700">Queued Tweaks & Libraries (<span id="tweak-count">0</span>)</h4>
-            <div id="tweaks-list" class="space-y-2 max-h-72 overflow-y-auto pr-1">
-              <div class="text-center py-8 text-xs font-bold text-slate-400 bg-white/40 rounded-2xl border border-dashed border-slate-200">
-                No tweaks queued for injection yet. Drag & drop a .dylib or .deb file above.
-              </div>
-            </div>
-          </div>
-
-          <!-- Executable Load Command Patching Guidance -->
-          <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs font-semibold text-amber-900 space-y-1">
-            <span class="font-extrabold block text-amber-950">💡 Mach-O Injector Note:</span>
-            <p>
-              Injected dynamic libraries are packaged into <code class="bg-amber-100 px-1 py-0.5 rounded text-amber-900 font-mono">Frameworks/</code> or the App Root upon compilation. If your main executable requires runtime hook loading, ensure your binary has an <code class="bg-amber-100 px-1 py-0.5 rounded text-amber-900 font-mono">LC_LOAD_DYLIB</code> reference pointing to <code class="bg-amber-100 px-1 py-0.5 rounded text-amber-900 font-mono">@executable_path/Frameworks/[library].dylib</code>.
-            </p>
-          </div>
-
-          <!-- Re-compile Button inside Injector Tab -->
-          <div class="pt-4 flex justify-center">
-            <button onclick="document.getElementById('plist-form').requestSubmit();" class="btn-gradient px-8 py-3.5 rounded-2xl font-black text-base shadow-lg">
-              💉 Inject Tweaks & Re-compile IPA
+          <div class="bg-white/80 border-2 border-dashed border-pink-300 rounded-2xl p-6 text-center space-y-3">
+            <input type="file" id="inject-file-input" accept=".dylib,.deb" class="hidden" onchange="handleInjectorUpload(event)" multiple>
+            <button onclick="document.getElementById('inject-file-input').click();" class="px-6 py-2.5 bg-sky-500 text-white font-bold text-sm rounded-xl hover:bg-sky-600 transition-all shadow-md">
+              + Select Dylib or Deb Files
             </button>
+            <p class="text-xs text-slate-500 font-medium">Supports multiple files simultaneously</p>
+          </div>
+
+          <div class="space-y-2">
+            <h4 class="text-sm font-bold text-slate-700">Injected Tweaks & Libraries:</h4>
+            <div id="injector-list" class="space-y-2">
+              <p class="text-xs font-bold text-slate-400 italic">No dylibs or debs queued for injection.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -315,24 +257,24 @@
 
   </main>
 
-  <!-- IMAGE CROPPER MODAL -->
+  <!-- FREEFORM IMAGE CROPPER MODAL -->
   <div id="cropper-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white/95 border-2 border-pink-300 rounded-3xl p-6 max-w-md w-full shadow-2xl flex flex-col items-center space-y-4">
+    <div class="bg-white/95 border-2 border-pink-300 rounded-3xl p-6 max-w-lg w-full shadow-2xl flex flex-col items-center space-y-4">
       <div class="text-center">
-        <h3 id="cropper-title" class="text-lg font-black text-sky-700">Crop Image</h3>
-        <p class="text-xs font-semibold text-slate-500">Drag or pinch/swipe inside the frame to adjust crop area.</p>
+        <h3 id="cropper-title" class="text-lg font-black text-sky-700">Freeform Crop Boot Screen</h3>
+        <p class="text-xs font-semibold text-slate-500">Drag blue corner & edge handles freely to resize crop region.</p>
       </div>
 
-      <div class="relative overflow-hidden rounded-2xl border-2 border-slate-300 bg-slate-900 shadow-inner w-[300px] h-[300px] flex items-center justify-center touch-none" id="crop-viewport-container">
-        <canvas id="crop-canvas" width="300" height="300" class="cursor-grab active:cursor-grabbing"></canvas>
+      <div class="relative overflow-hidden rounded-2xl border-2 border-slate-300 bg-slate-900 shadow-inner w-[340px] h-[340px] flex items-center justify-center touch-none select-none" id="crop-viewport-container">
+        <canvas id="crop-canvas" width="340" height="340" class="cursor-crosshair"></canvas>
       </div>
 
       <div class="flex items-center space-x-3 w-full justify-center">
         <button type="button" onclick="closeCropper()" class="px-5 py-2.5 bg-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-300 transition-all">
           Cancel
         </button>
-        <button type="button" onclick="confirmCrop()" class="btn-gradient px-6 py-2.5 font-black text-xs rounded-xl shadow-md">
-          Crop & Save
+        <button type="button" onclick="confirmFreeformCrop()" class="btn-gradient px-6 py-2.5 font-black text-xs rounded-xl shadow-md">
+          Apply Crop
         </button>
       </div>
     </div>
@@ -340,24 +282,197 @@
 
   <!-- Footer -->
   <footer class="py-4 text-center text-xs font-bold text-slate-600">
-    <span class="text-effect">IPA Editor & Injector</span> • Client-Side iOS Modding Toolkit
+    <span class="text-effect">IPA Editor</span> • Client-Side Editing & Injection
   </footer>
 
-  <!-- Application Logic -->
+  <!-- Plist Parsing & Application Logic -->
   <script>
+    // FULL FEATURED BPLIST & XML DECODER
+    function parsePlistBuffer(buffer) {
+      const uint8 = new Uint8Array(buffer);
+      const magic = String.fromCharCode.apply(null, uint8.subarray(0, 8));
+      const rawText = new TextDecoder("utf-8", { fatal: false }).decode(uint8);
+
+      let parsed = {};
+
+      if (magic.startsWith('bplist')) {
+        try {
+          parsed = parseBplist(uint8);
+        } catch (err) {
+          console.warn("bplist structured parse error, falling back to deep regex scan:", err);
+        }
+      } else {
+        try {
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(rawText, "text/xml");
+          if (!xmlDoc.querySelector("parsererror")) {
+            function nodeToValue(node) {
+              if (!node) return null;
+              const tag = node.tagName;
+              if (tag === 'dict') {
+                const res = {};
+                let currentKey = null;
+                for (let child of node.children) {
+                  if (child.tagName === 'key') currentKey = child.textContent.trim();
+                  else if (currentKey) { res[currentKey] = nodeToValue(child); currentKey = null; }
+                }
+                return res;
+              } else if (tag === 'array') return Array.from(node.children).map(nodeToValue);
+              else if (tag === 'string' || tag === 'integer' || tag === 'real') return node.textContent;
+              else if (tag === 'true') return true;
+              else if (tag === 'false') return false;
+              return node.textContent;
+            }
+            const rootDict = xmlDoc.querySelector('plist > dict');
+            if (rootDict) parsed = nodeToValue(rootDict) || {};
+          }
+        } catch (e) {}
+      }
+
+      // Fallback deep scan reader for missing primary keys in binary or obfuscated plists
+      const extractField = (keys) => {
+        for (const k of keys) {
+          if (parsed[k] !== undefined && parsed[k] !== null && String(parsed[k]).trim() !== "") {
+            return String(parsed[k]).trim();
+          }
+          // Search raw ASCII bytes
+          const asciiDec = new TextDecoder("ascii", { fatal: false }).decode(uint8);
+          const idx = asciiDec.indexOf(k);
+          if (idx !== -1) {
+            const snippet = asciiDec.substring(idx + k.length, idx + k.length + 100);
+            const match = snippet.match(/[a-zA-Z0-9_\-\.\s]+/);
+            if (match && match[0].trim().length > 0) return match[0].trim();
+          }
+        }
+        return null;
+      };
+
+      return {
+        CFBundleIdentifier: extractField(['CFBundleIdentifier', 'CFBundleID']) || "com.legacy.app",
+        CFBundleDisplayName: extractField(['CFBundleDisplayName', 'CFBundleName']) || "App",
+        CFBundleName: extractField(['CFBundleName']) || "App",
+        CFBundleVersion: extractField(['CFBundleVersion']) || "1.0",
+        CFBundleShortVersionString: extractField(['CFBundleShortVersionString']) || "1.0",
+        MinimumOSVersion: extractField(['MinimumOSVersion']) || "6.0",
+        CFBundleExecutable: extractField(['CFBundleExecutable'])
+      };
+    }
+
+    // Binary Plist (bplist00) Binary Structure Reader
+    function parseBplist(uint8) {
+      const view = new DataView(uint8.buffer, uint8.byteOffset, uint8.byteLength);
+      const trailerOffset = uint8.length - 32;
+      if (trailerOffset < 0) return {};
+
+      const offsetSize = uint8[trailerOffset + 6];
+      const objectRefSize = uint8[trailerOffset + 7];
+      const numObjects = Number(view.getBigInt64(trailerOffset + 8, false));
+      const topLevelObject = Number(view.getBigInt64(trailerOffset + 16, false));
+      const offsetTableOffset = Number(view.getBigInt64(trailerOffset + 24, false));
+
+      const objectOffsets = [];
+      for (let i = 0; i < numObjects; i++) {
+        let pos = offsetTableOffset + (i * offsetSize);
+        let offset = 0;
+        for (let b = 0; b < offsetSize; b++) {
+          offset = (offset * 256) + uint8[pos + b];
+        }
+        objectOffsets.push(offset);
+      }
+
+      function parseObject(objIndex) {
+        const offset = objectOffsets[objIndex];
+        if (offset === undefined || offset >= uint8.length) return null;
+        const marker = uint8[offset];
+        const objType = marker & 0xf0;
+        const objInfo = marker & 0x0f;
+
+        // Integer
+        if (objType === 0x10) {
+          const length = 1 << objInfo;
+          let val = 0;
+          for (let i = 0; i < length; i++) val = (val * 256) + uint8[offset + 1 + i];
+          return val;
+        }
+        // String (ASCII / UTF-8)
+        if (objType === 0x50 || objType === 0x60) {
+          let length = objInfo;
+          let dataOffset = offset + 1;
+          if (objInfo === 0x0f) {
+            const intMarker = uint8[offset + 1];
+            const intLenSize = 1 << (intMarker & 0x0f);
+            length = 0;
+            for (let i = 0; i < intLenSize; i++) length = (length * 256) + uint8[offset + 2 + i];
+            dataOffset = offset + 2 + intLenSize;
+          }
+          const sub = uint8.subarray(dataOffset, dataOffset + length);
+          return new TextDecoder(objType === 0x60 ? "utf-16be" : "utf-8", { fatal: false }).decode(sub);
+        }
+        // Array
+        if (objType === 0xa0) {
+          let count = objInfo;
+          let dataOffset = offset + 1;
+          if (objInfo === 0x0f) {
+            // Read length int
+            count = uint8[offset + 1]; // Simplified
+            dataOffset = offset + 2;
+          }
+          const arr = [];
+          for (let i = 0; i < count; i++) {
+            const ref = getRef(dataOffset + (i * objectRefSize));
+            arr.push(parseObject(ref));
+          }
+          return arr;
+        }
+        // Dict
+        if (objType === 0xd0) {
+          let count = objInfo;
+          let dataOffset = offset + 1;
+          if (objInfo === 0x0f) {
+            count = uint8[offset + 2];
+            dataOffset = offset + 3;
+          }
+          const keys = [];
+          for (let i = 0; i < count; i++) {
+            const ref = getRef(dataOffset + (i * objectRefSize));
+            keys.push(parseObject(ref));
+          }
+          const dict = {};
+          for (let i = 0; i < count; i++) {
+            const ref = getRef(dataOffset + (count * objectRefSize) + (i * objectRefSize));
+            dict[keys[i]] = parseObject(ref);
+          }
+          return dict;
+        }
+        return null;
+      }
+
+      function getRef(pos) {
+        let ref = 0;
+        for (let b = 0; b < objectRefSize; b++) {
+          ref = (ref * 256) + uint8[pos + b];
+        }
+        return ref;
+      }
+
+      const root = parseObject(topLevelObject);
+      return typeof root === 'object' && root !== null ? root : {};
+    }
+
     const CORE_LAUNCH_CATEGORIES = [
-      { id: 'ipad_port', name: 'iPad Portrait', sub: '768x1024 / 1536x2048', match: /Default-Portrait.*\.png$/i, aspect: 3/4 },
-      { id: 'ipad_land', name: 'iPad Landscape', sub: '1024x768 / 2048x1536', match: /Default-Landscape.*\.png$/i, aspect: 4/3 },
-      { id: 'iphone_4in', name: 'iPhone 4" Retina', sub: '640x1136 (568h)', match: /Default-568h@2x.*\.png$/i, aspect: 640/1136 },
-      { id: 'iphone_47in', name: 'iPhone 4.7"', sub: '750x1334 (667h)', match: /(Default|LaunchImage).*667h.*\.png$/i, aspect: 750/1334 },
-      { id: 'iphone_55in_port', name: 'iPhone 5.5" Portrait', sub: '1242x2208 (736h)', match: /(Default|LaunchImage).*(Portrait)?.*736h.*\.png$/i, aspect: 1242/2208 },
-      { id: 'iphone_55in_land', name: 'iPhone 5.5" Landscape', sub: '2208x1242 (736h)', match: /(Default|LaunchImage).*Landscape.*736h.*\.png$/i, aspect: 2208/1242 }
+      { id: 'ipad_port', name: 'iPad Portrait', sub: '768x1024 / 1536x2048', match: /Default-Portrait.*\.png$/i },
+      { id: 'ipad_land', name: 'iPad Landscape', sub: '1024x768 / 2048x1536', match: /Default-Landscape.*\.png$/i },
+      { id: 'iphone_4in', name: 'iPhone 4" Retina', sub: '640x1136 (568h)', match: /Default-568h@2x.*\.png$/i },
+      { id: 'iphone_47in', name: 'iPhone 4.7"', sub: '750x1334 (667h)', match: /(Default|LaunchImage).*667h.*\.png$/i },
+      { id: 'iphone_55in_port', name: 'iPhone 5.5" Portrait', sub: '1242x2208 (736h)', match: /(Default|LaunchImage).*(Portrait)?.*736h.*\.png$/i },
+      { id: 'iphone_55in_land', name: 'iPhone 5.5" Landscape', sub: '2208x1242 (736h)', match: /(Default|LaunchImage).*Landscape.*736h.*\.png$/i }
     ];
-    const OPTIONAL_35_CATEGORY = { id: 'iphone_35in', name: 'iPhone 3.5" (Legacy)', sub: '320x480 / 640x960', match: /Default(@2x)?\.png$/i, aspect: 320/480 };
+    const OPTIONAL_35_CATEGORY = { id: 'iphone_35in', name: 'iPhone 3.5" (Legacy)', sub: '320x480 / 640x960', match: /Default(@2x)?\.png$/i };
 
     let currentZip = null;
     let plistObj = {};
     let plistPath = null;
+    let mainExecName = null;
     let mainExecPath = null;
     let explicitIconTargetFiles = [];
     let detectedLaunchFiles = [];
@@ -368,41 +483,27 @@
     let allZipFiles = [];
     let uploadedIconImage = null;
 
-    // Injector Tweak Queue
-    let queuedTweaks = []; // Array of { id, name, size, data (Uint8Array), arch, type: 'dylib'|'deb' }
+    let injectionQueue = [];
 
-    // Cropper State
-    let cropTargetType = null;
-    let cropImageObj = new Image();
-    let cropAspect = 1.0;
-    let cropScale = 1.0;
-    let cropOffsetX = 0;
-    let cropOffsetY = 0;
-    let isDragging = false;
-    let dragStartX = 0;
-    let dragStartY = 0;
-    let initialPinchDist = null;
+    let cropImgObj = new Image();
+    let cropBox = { x: 20, y: 20, w: 300, h: 300 };
+    let activeHandle = null;
+    let isDraggingBox = false;
+    let dragStartPos = { x: 0, y: 0 };
+    let cropBoxStart = { x: 0, y: 0, w: 0, h: 0 };
+    const HANDLE_SIZE = 12;
 
     function switchTab(tab) {
-      const metaBtn = document.getElementById('tab-btn-meta');
-      const injBtn = document.getElementById('tab-btn-injector');
-      const metaSec = document.getElementById('tab-content-meta');
-      const injSec = document.getElementById('tab-content-injector');
-
       if (tab === 'meta') {
-        metaBtn.classList.add('btn-tab-active', 'text-sky-700');
-        metaBtn.classList.remove('text-slate-600');
-        injBtn.classList.remove('btn-tab-active', 'text-sky-700');
-        injBtn.classList.add('text-slate-600');
-        metaSec.classList.remove('hidden');
-        injSec.classList.add('hidden');
+        document.getElementById('tab-content-meta').classList.remove('hidden');
+        document.getElementById('tab-content-inject').classList.add('hidden');
+        document.getElementById('tab-btn-meta').className = "px-6 py-2.5 font-bold text-sm text-sky-700 border-b-4 border-pink-400 focus:outline-none";
+        document.getElementById('tab-btn-inject').className = "px-6 py-2.5 font-bold text-sm text-slate-500 hover:text-sky-700 border-b-4 border-transparent focus:outline-none";
       } else {
-        injBtn.classList.add('btn-tab-active', 'text-sky-700');
-        injBtn.classList.remove('text-slate-600');
-        metaBtn.classList.remove('btn-tab-active', 'text-sky-700');
-        metaBtn.classList.add('text-slate-600');
-        injSec.classList.remove('hidden');
-        metaSec.classList.add('hidden');
+        document.getElementById('tab-content-meta').classList.add('hidden');
+        document.getElementById('tab-content-inject').classList.remove('hidden');
+        document.getElementById('tab-btn-meta').className = "px-6 py-2.5 font-bold text-sm text-slate-500 hover:text-sky-700 border-b-4 border-transparent focus:outline-none";
+        document.getElementById('tab-btn-inject').className = "px-6 py-2.5 font-bold text-sm text-sky-700 border-b-4 border-pink-400 focus:outline-none";
       }
     }
 
@@ -410,6 +511,7 @@
       currentZip = null;
       plistObj = {};
       plistPath = null;
+      mainExecName = null;
       mainExecPath = null;
       uploadedIconImage = null;
       explicitIconTargetFiles = [];
@@ -418,7 +520,7 @@
       selectedCategoryTarget = null;
       categoryReplacements = {};
       allZipFiles = [];
-      queuedTweaks = [];
+      injectionQueue = [];
 
       document.getElementById('display-name').value = '';
       document.getElementById('bundle-identifier').value = '';
@@ -429,41 +531,34 @@
       document.getElementById('exec-name-badge').innerText = 'None';
       document.getElementById('arch-badge').innerText = 'Detecting...';
       document.getElementById('app-icon').src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='%23f1f5f9'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%2394a3b8' font-size='12' font-weight='bold'>No Icon</text></svg>";
+      renderInjectorList();
+    }
+
+    function getPlistKey(obj, targetKey) {
+      if (!obj || typeof obj !== 'object') return undefined;
+      if (obj[targetKey] !== undefined && obj[targetKey] !== null) return obj[targetKey];
       
-      renderTweaksList();
+      const targetLower = targetKey.toLowerCase();
+      for (const k of Object.keys(obj)) {
+        if (k.toLowerCase() === targetLower) {
+          if (obj[k] !== undefined && obj[k] !== null) return obj[k];
+        }
+      }
+      return undefined;
     }
 
-    async function checkMachOMagic(uint8Data) {
-      if (!uint8Data || uint8Data.length < 4) return false;
-      const view = new DataView(uint8Data.buffer, uint8Data.byteOffset, 4);
-      const magicBE = view.getUint32(0, false);
-      const magicLE = view.getUint32(0, true);
-      return (magicBE === 0xFEEDFACE || magicLE === 0xFEEDFACE || magicBE === 0xFEEDFACF || magicLE === 0xFEEDFACF || magicBE === 0xCAFEBABE || magicLE === 0xCAFEBABE);
-    }
-
-    function inspectDylibArchitecture(uint8Buffer) {
-      if (!uint8Buffer || uint8Buffer.length < 8) return "Unknown";
+    async function checkMachOMagic(fileEntry) {
+      if (!fileEntry) return false;
       try {
-        const view = new DataView(uint8Buffer.buffer, uint8Buffer.byteOffset, uint8Buffer.byteLength);
+        const header = await fileEntry.async("uint8array");
+        if (header.length < 4) return false;
+        const view = new DataView(header.buffer, header.byteOffset, 4);
         const magicBE = view.getUint32(0, false);
         const magicLE = view.getUint32(0, true);
-
-        if (magicBE === 0xCAFEBABE || magicLE === 0xCAFEBABE || magicBE === 0xBABEFACA) {
-          const numArchitectures = view.getUint32(4, false);
-          let archs = new Set();
-          let offset = 8;
-          for (let i = 0; i < numArchitectures && (offset + 20) <= uint8Buffer.length; i++) {
-            const cpuType = view.getInt32(offset, false);
-            if (cpuType === 12 || cpuType === 7) archs.add("armv7");
-            if (cpuType === 16777228 || cpuType === 16777223 || cpuType === 0x0100000C || cpuType === 0x01000007) archs.add("arm64");
-            offset += 20;
-          }
-          return archs.size > 0 ? Array.from(archs).join(" & ") : "Universal";
-        }
-        if (magicBE === 0xFEEDFACE || magicLE === 0xFEEDFACE) return "32-bit (armv7)";
-        if (magicBE === 0xFEEDFACF || magicLE === 0xFEEDFACF) return "64-bit (arm64)";
-      } catch (err) {}
-      return "ARM Binary";
+        return (magicBE === 0xFEEDFACE || magicLE === 0xFEEDFACE || magicBE === 0xFEEDFACF || magicLE === 0xFEEDFACF || magicBE === 0xCAFEBABE || magicLE === 0xCAFEBABE);
+      } catch (e) {
+        return false;
+      }
     }
 
     async function detectBinaryArchitecture(appPrefix, executableName) {
@@ -476,11 +571,11 @@
       if (!zipEntry) {
         for (const item of allZipFiles) {
           if (item.path.startsWith(appPrefix) && !item.path.endsWith('/')) {
-            const header = await item.entry.async("uint8array");
-            const isMachO = await checkMachOMagic(header);
+            const isMachO = await checkMachOMagic(item.entry);
             if (isMachO) {
               zipEntry = item.entry;
               mainExecPath = item.path;
+              mainExecName = item.path.split('/').pop();
               break;
             }
           }
@@ -495,94 +590,33 @@
 
       try {
         const headerUint8 = await zipEntry.async("uint8array");
-        return inspectDylibArchitecture(headerUint8);
+        if (headerUint8.length < 8) return "32-bit (ARMv7)";
+
+        const view = new DataView(headerUint8.buffer, headerUint8.byteOffset, headerUint8.byteLength);
+        const magicBE = view.getUint32(0, false);
+        const magicLE = view.getUint32(0, true);
+
+        if (magicBE === 0xCAFEBABE || magicLE === 0xCAFEBABE || magicBE === 0xBABEFACA) {
+          const numArchitectures = view.getUint32(4, false);
+          let archs = new Set();
+          let offset = 8;
+          for (let i = 0; i < numArchitectures && (offset + 20) <= headerUint8.length; i++) {
+            const cpuType = view.getInt32(offset, false);
+            if (cpuType === 12 || cpuType === 7) archs.add("32-bit");
+            if (cpuType === 16777228 || cpuType === 16777223 || cpuType === 0x0100000C || cpuType === 0x01000007) archs.add("64-bit");
+            offset += 20;
+          }
+          if (archs.has("32-bit") && archs.has("64-bit")) return "Universal (32 & 64)";
+          else if (archs.size > 0) return Array.from(archs).join(" & ");
+          return "Universal";
+        }
+
+        if (magicBE === 0xFEEDFACE || magicLE === 0xFEEDFACE) return "32-bit (ARMv7)";
+        if (magicBE === 0xFEEDFACF || magicLE === 0xFEEDFACF) return "64-bit (ARM64)";
       } catch (err) {
         console.warn("Arch detection fallback:", err);
       }
       return "32-bit";
-    }
-
-    /* DEB (AR Archive) Parser & Tar Unpacker */
-    async function extractDylibsFromDeb(debBuffer) {
-      // Unix AR format header check "!<arch>\n"
-      const decoder = new TextDecoder("utf-8");
-      const magicStr = decoder.decode(debBuffer.slice(0, 8));
-      if (!magicStr.startsWith("!<arch>")) {
-        throw new Error("File is not a valid Debian (.deb) AR package.");
-      }
-
-      let offset = 8;
-      let dataTarBuffer = null;
-      let dataTarName = "";
-
-      while (offset < debBuffer.length) {
-        if (offset % 2 !== 0) offset++; // Align 2 bytes
-        if (offset + 60 > debBuffer.length) break;
-
-        const headerBytes = debBuffer.slice(offset, offset + 60);
-        const fileName = decoder.decode(headerBytes.slice(0, 16)).trim();
-        const fileSize = parseInt(decoder.decode(headerBytes.slice(48, 58)).trim(), 10);
-        offset += 60;
-
-        if (fileName.startsWith("data.tar")) {
-          dataTarBuffer = debBuffer.slice(offset, offset + fileSize);
-          dataTarName = fileName;
-          break;
-        }
-        offset += fileSize;
-      }
-
-      if (!dataTarBuffer) {
-        throw new Error("Could not find data.tar payload inside the .deb archive.");
-      }
-
-      // Check if data.tar is gzipped (.tar.gz) or uncompressed
-      let tarBytes = dataTarBuffer;
-      if (dataTarName.endsWith('.gz') || (dataTarBuffer[0] === 0x1F && dataTarBuffer[1] === 0x8B)) {
-        try {
-          // Decompress GZIP using JSZip Inflate stream if available or pako fallback
-          const zipTemp = new JSZip();
-          zipTemp.file("temp", dataTarBuffer);
-          const decompressed = await JSZip.loadAsync(dataTarBuffer);
-          // If JSZip loaded as archive directly
-          const keys = Object.keys(decompressed.files);
-          if (keys.length > 0) {
-            tarBytes = await decompressed.files[keys[0]].async("uint8array");
-          }
-        } catch (gzErr) {
-          // Handle raw gzip stream inflate
-          tarBytes = dataTarBuffer; 
-        }
-      }
-
-      // Simple USTAR / POSIX Tar parser for extracted dylibs
-      const extractedFiles = [];
-      let tarOffset = 0;
-
-      while (tarOffset + 512 <= tarBytes.length) {
-        const block = tarBytes.slice(tarOffset, tarOffset + 512);
-        let name = decoder.decode(block.slice(0, 100)).replace(/\0/g, '').trim();
-        if (!name) break; // End of tar
-
-        const sizeOctal = decoder.decode(block.slice(124, 136)).replace(/\0/g, '').trim();
-        const size = parseInt(sizeOctal, 8) || 0;
-        tarOffset += 512;
-
-        if (size > 0 && tarOffset + size <= tarBytes.length) {
-          const fileContent = tarBytes.slice(tarOffset, tarOffset + size);
-          if (name.endsWith('.dylib') || name.includes('.framework/')) {
-            const shortName = name.split('/').pop();
-            if (shortName && !shortName.startsWith('.')) {
-              extractedFiles.push({ name: shortName, data: fileContent });
-            }
-          }
-          tarOffset += Math.ceil(size / 512) * 512;
-        } else {
-          tarOffset += Math.ceil(size / 512) * 512;
-        }
-      }
-
-      return extractedFiles;
     }
 
     async function getSafePreviewDataUrl(zipFileEntry) {
@@ -618,41 +652,26 @@ ${serializeValue(obj)}
 </plist>`;
     }
 
-    function parseXmlPlist(xmlString) {
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(xmlString, "text/xml");
-      function nodeToValue(node) {
-        if (!node) return null;
-        const tag = node.tagName;
-        if (tag === 'dict') {
-          const res = {};
-          let currentKey = null;
-          for (let child of node.children) {
-            if (child.tagName === 'key') currentKey = child.textContent.trim();
-            else if (currentKey) { res[currentKey] = nodeToValue(child); currentKey = null; }
-          }
-          return res;
-        } else if (tag === 'array') return Array.from(node.children).map(nodeToValue);
-        else if (tag === 'string') return node.textContent;
-        else if (tag === 'true') return true;
-        else if (tag === 'false') return false;
-        else if (tag === 'integer' || tag === 'real') return Number(node.textContent);
-        return node.textContent;
-      }
-      const rootDict = xmlDoc.querySelector('plist > dict');
-      return rootDict ? nodeToValue(rootDict) : {};
-    }
-
-    function resizeImageToBlob(imgElement, width, height) {
-      return new Promise((resolve) => {
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(imgElement, 0, 0, width, height);
-        canvas.toBlob((blob) => { blob.arrayBuffer().then(resolve); }, 'image/png');
+    function convertAndResizeImageToPngBlob(imgElement, targetWidth, targetHeight) {
+      return new Promise((resolve, reject) => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = targetWidth;
+          canvas.height = targetHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(imgElement, 0, 0, targetWidth, targetHeight);
+          canvas.toBlob((blob) => {
+            if (!blob) {
+              reject(new Error("Image conversion failed."));
+              return;
+            }
+            blob.arrayBuffer().then(resolve).catch(reject);
+          }, 'image/png');
+        } catch (err) {
+          reject(err);
+        }
       });
     }
 
@@ -680,45 +699,41 @@ ${serializeValue(obj)}
         plistPath = foundPath;
         const plistUint8 = await currentZip.file(plistPath).async("uint8array");
 
-        try {
-          if (window.bplistParser) {
-            const parsed = bplistParser.parseBuffer(plistUint8);
-            if (parsed && parsed.length > 0) plistObj = parsed[0];
-          }
-        } catch (bpErr) {}
-
-        if (!plistObj || Object.keys(plistObj).length === 0) {
-          try {
-            const decoder = new TextDecoder("utf-8");
-            plistObj = parseXmlPlist(decoder.decode(plistUint8));
-          } catch (xmlErr) {}
-        }
-
+        plistObj = parsePlistBuffer(plistUint8);
         if (!plistObj || typeof plistObj !== 'object') plistObj = {};
 
-        document.getElementById('display-name').value = plistObj.CFBundleDisplayName || plistObj.CFBundleName || file.name.replace(/\.ipa$/i, '');
-        document.getElementById('bundle-identifier').value = plistObj.CFBundleIdentifier || "com.legacy.app";
-        document.getElementById('bundle-name').value = plistObj.CFBundleName || file.name.replace(/\.ipa$/i, '');
-        document.getElementById('bundle-version').value = plistObj.CFBundleVersion || "1.0";
-        document.getElementById('short-version-string').value = plistObj.CFBundleShortVersionString || "1.0";
-        document.getElementById('min-ios-version').value = plistObj.MinimumOSVersion || "6.0";
+        const dispName = getPlistKey(plistObj, 'CFBundleDisplayName') || getPlistKey(plistObj, 'CFBundleName') || file.name.replace(/\.ipa$/i, '');
+        const bundleId = getPlistKey(plistObj, 'CFBundleIdentifier') || getPlistKey(plistObj, 'CFBundleID') || "com.legacy.app";
+        const bundleName = getPlistKey(plistObj, 'CFBundleName') || file.name.replace(/\.ipa$/i, '');
+        const bundleVer = getPlistKey(plistObj, 'CFBundleVersion') || "1.0";
+        const shortVer = getPlistKey(plistObj, 'CFBundleShortVersionString') || "1.0";
+        const minOS = getPlistKey(plistObj, 'MinimumOSVersion') || "6.0";
+        mainExecName = getPlistKey(plistObj, 'CFBundleExecutable');
+
+        document.getElementById('display-name').value = dispName;
+        document.getElementById('bundle-identifier').value = bundleId;
+        document.getElementById('bundle-name').value = bundleName;
+        document.getElementById('bundle-version').value = bundleVer;
+        document.getElementById('short-version-string').value = shortVer;
+        document.getElementById('min-ios-version').value = minOS;
 
         const appPrefix = plistPath.substring(0, plistPath.lastIndexOf('Info.plist'));
-        const archType = await detectBinaryArchitecture(appPrefix, plistObj.CFBundleExecutable);
+        const archType = await detectBinaryArchitecture(appPrefix, mainExecName);
         document.getElementById('arch-badge').innerText = archType;
 
         let plistIconNames = [];
         const extractPlistIcons = (dict) => {
-          if (!dict) return;
-          const primary = dict.CFBundlePrimaryIcon || dict['CFBundlePrimaryIcon'];
-          if (primary) {
-            let files = primary.CFBundleIconFiles || primary['CFBundleIconFiles'];
+          if (!dict || typeof dict !== 'object') return;
+          const primary = getPlistKey(dict, 'CFBundlePrimaryIcon');
+          if (primary && typeof primary === 'object') {
+            let files = getPlistKey(primary, 'CFBundleIconFiles');
             if (Array.isArray(files)) files.forEach(f => plistIconNames.push(f));
           }
         };
-        extractPlistIcons(plistObj.CFBundleIcons);
-        extractPlistIcons(plistObj['CFBundleIcons~ipad']);
-        if (Array.isArray(plistObj.CFBundleIconFiles)) plistObj.CFBundleIconFiles.forEach(f => plistIconNames.push(f));
+        extractPlistIcons(getPlistKey(plistObj, 'CFBundleIcons'));
+        extractPlistIcons(getPlistKey(plistObj, 'CFBundleIcons~ipad'));
+        const directIcons = getPlistKey(plistObj, 'CFBundleIconFiles');
+        if (Array.isArray(directIcons)) directIcons.forEach(f => plistIconNames.push(f));
 
         currentZip.forEach((relativePath) => {
           const fileName = relativePath.replace(appPrefix, '');
@@ -752,106 +767,6 @@ ${serializeValue(obj)}
         alert("Error loading IPA: " + err.message);
         document.getElementById('loader').classList.add('hidden');
       }
-    }
-
-    async function handleTweakUpload(event) {
-      const files = Array.from(event.target.files);
-      if (!files || files.length === 0) return;
-      await processTweakFiles(files);
-      event.target.value = '';
-    }
-
-    function handleTweakDrop(event) {
-      event.preventDefault();
-      if (event.dataTransfer.files && event.dataTransfer.files.length > 0) {
-        processTweakFiles(Array.from(event.dataTransfer.files));
-      }
-    }
-
-    async function processTweakFiles(files) {
-      document.getElementById('loader').classList.remove('hidden');
-      for (const file of files) {
-        try {
-          const arrayBuffer = await file.arrayBuffer();
-          const uint8 = new Uint8Array(arrayBuffer);
-
-          if (file.name.endsWith('.deb')) {
-            const extracted = await extractDylibsFromDeb(uint8);
-            if (extracted.length === 0) {
-              // Direct fallback: store entire deb dynamic contents
-              queuedTweaks.push({
-                id: Math.random().toString(36).substring(2, 9),
-                name: file.name.replace('.deb', '.dylib'),
-                size: (file.size / 1024).toFixed(1) + " KB",
-                data: uint8,
-                arch: inspectDylibArchitecture(uint8),
-                type: 'deb'
-              });
-            } else {
-              extracted.forEach(item => {
-                queuedTweaks.push({
-                  id: Math.random().toString(36).substring(2, 9),
-                  name: item.name,
-                  size: (item.data.length / 1024).toFixed(1) + " KB",
-                  data: item.data,
-                  arch: inspectDylibArchitecture(item.data),
-                  type: 'dylib'
-                });
-              });
-            }
-          } else {
-            queuedTweaks.push({
-              id: Math.random().toString(36).substring(2, 9),
-              name: file.name,
-              size: (file.size / 1024).toFixed(1) + " KB",
-              data: uint8,
-              arch: inspectDylibArchitecture(uint8),
-              type: 'dylib'
-            });
-          }
-        } catch (err) {
-          alert(`Failed to process tweak file ${file.name}: ${err.message}`);
-        }
-      }
-      document.getElementById('loader').classList.add('hidden');
-      renderTweaksList();
-    }
-
-    function removeTweak(id) {
-      queuedTweaks = queuedTweaks.filter(t => t.id !== id);
-      renderTweaksList();
-    }
-
-    function renderTweaksList() {
-      const container = document.getElementById('tweaks-list');
-      document.getElementById('tweak-count').innerText = queuedTweaks.length;
-
-      if (queuedTweaks.length === 0) {
-        container.innerHTML = `
-          <div class="text-center py-8 text-xs font-bold text-slate-400 bg-white/40 rounded-2xl border border-dashed border-slate-200">
-            No tweaks queued for injection yet. Drag & drop a .dylib or .deb file above.
-          </div>`;
-        return;
-      }
-
-      container.innerHTML = '';
-      queuedTweaks.forEach(tweak => {
-        const item = document.createElement('div');
-        item.className = "flex items-center justify-between bg-white/95 p-3 rounded-xl border border-pink-200 shadow-sm hover:border-sky-300 transition-all";
-        item.innerHTML = `
-          <div class="flex items-center space-x-3 overflow-hidden">
-            <span class="text-xl">${tweak.type === 'deb' ? '📦' : '💉'}</span>
-            <div class="truncate">
-              <span class="text-xs font-black text-slate-800 truncate block">${tweak.name}</span>
-              <span class="text-[10px] font-bold text-slate-500">${tweak.size} • Architecture: ${tweak.arch}</span>
-            </div>
-          </div>
-          <button onclick="removeTweak('${tweak.id}')" class="px-2.5 py-1 bg-red-100 text-red-600 hover:bg-red-200 rounded-lg text-xs font-extrabold transition-colors">
-            Remove
-          </button>
-        `;
-        container.appendChild(item);
-      });
     }
 
     async function renderLaunchScreenGrid() {
@@ -908,12 +823,15 @@ ${serializeValue(obj)}
       document.getElementById('launch-screen-file-input').click();
     }
 
-    function prepareIconCrop(event) {
+    function handleDirectIconUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
       const reader = new FileReader();
       reader.onload = function(e) {
-        openCropper('icon', e.target.result, 1.0, "Crop App Icon");
+        document.getElementById('app-icon').src = e.target.result;
+        const img = new Image();
+        img.onload = () => { uploadedIconImage = img; };
+        img.src = e.target.result;
       };
       reader.readAsDataURL(file);
       event.target.value = '';
@@ -925,191 +843,220 @@ ${serializeValue(obj)}
 
       let targetCat = CORE_LAUNCH_CATEGORIES.find(c => c.id === selectedCategoryTarget);
       if (!targetCat && selectedCategoryTarget === 'iphone_35in') targetCat = OPTIONAL_35_CATEGORY;
-      const aspect = targetCat ? targetCat.aspect : (9/16);
 
       const reader = new FileReader();
       reader.onload = function(e) {
-        openCropper('splash', e.target.result, aspect, `Crop ${targetCat ? targetCat.name : 'Splash Screen'}`);
+        openFreeformCropper(e.target.result, `Freeform Crop: ${targetCat ? targetCat.name : 'Boot Screen'}`);
       };
       reader.readAsDataURL(file);
       event.target.value = '';
     }
 
-    function openCropper(type, dataUrl, aspect, titleText) {
-      cropTargetType = type;
-      cropAspect = aspect;
+    function openFreeformCropper(dataUrl, titleText) {
       document.getElementById('cropper-title').innerText = titleText;
-
-      cropImageObj.onload = function() {
-        cropScale = Math.max(300 / cropImageObj.width, 300 / (cropImageObj.width * cropAspect));
-        cropOffsetX = (300 - cropImageObj.width * cropScale) / 2;
-        cropOffsetY = (300 - (cropImageObj.width * cropAspect) * cropScale) / 2;
-        
+      cropImgObj.onload = function() {
+        cropBox = { x: 20, y: 20, w: 300, h: 300 };
         document.getElementById('cropper-modal').classList.remove('hidden');
-        drawCropper();
+        drawFreeformCropper();
       };
-      cropImageObj.src = dataUrl;
+      cropImgObj.src = dataUrl;
     }
 
     function closeCropper() {
       document.getElementById('cropper-modal').classList.add('hidden');
     }
 
-    function drawCropper() {
+    function drawFreeformCropper() {
       const canvas = document.getElementById('crop-canvas');
       const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, 300, 300);
+      ctx.clearRect(0, 0, 340, 340);
 
-      ctx.save();
-      ctx.translate(cropOffsetX, cropOffsetY);
-      ctx.scale(cropScale, cropScale);
-      ctx.drawImage(cropImageObj, 0, 0);
-      ctx.restore();
+      ctx.drawImage(cropImgObj, 0, 0, 340, 340);
 
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.6)';
-      ctx.fillRect(0, 0, 300, 300);
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.65)';
+      ctx.fillRect(0, 0, 340, 340);
 
-      let boxW = 260;
-      let boxH = boxW / cropAspect;
-      if (boxH > 260) {
-        boxH = 260;
-        boxW = boxH * cropAspect;
-      }
-      const boxX = (300 - boxW) / 2;
-      const boxY = (300 - boxH) / 2;
+      ctx.clearRect(cropBox.x, cropBox.y, cropBox.w, cropBox.h);
+      ctx.drawImage(cropImgObj, 0, 0, 340, 340);
 
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(boxX, boxY, boxW, boxH);
-      ctx.clip();
-      ctx.clearRect(0, 0, 300, 300);
-
-      ctx.translate(cropOffsetX, cropOffsetY);
-      ctx.scale(cropScale, cropScale);
-      ctx.drawImage(cropImageObj, 0, 0);
-      ctx.restore();
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.65)';
+      ctx.fillRect(0, 0, 340, cropBox.y);
+      ctx.fillRect(0, cropBox.y + cropBox.h, 340, 340 - (cropBox.y + cropBox.h));
+      ctx.fillRect(0, cropBox.y, cropBox.x, cropBox.h);
+      ctx.fillRect(cropBox.x + cropBox.w, cropBox.y, 340 - (cropBox.x + cropBox.w), cropBox.h);
 
       ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 2.5;
-      ctx.strokeRect(boxX, boxY, boxW, boxH);
+      ctx.lineWidth = 2;
+      ctx.strokeRect(cropBox.x, cropBox.y, cropBox.w, cropBox.h);
 
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(boxX + boxW / 3, boxY); ctx.lineTo(boxX + boxW / 3, boxY + boxH);
-      ctx.moveTo(boxX + (boxW * 2) / 3, boxY); ctx.lineTo(boxX + (boxW * 2) / 3, boxY + boxH);
-      ctx.moveTo(boxX, boxY + boxH / 3); ctx.lineTo(boxX + boxW, boxY + boxH / 3);
-      ctx.moveTo(boxX, boxY + (boxH * 2) / 3); ctx.lineTo(boxX + boxW, boxY + (boxH * 2) / 3);
-      ctx.stroke();
+      ctx.fillStyle = '#f472b6';
+      const handles = getHandles();
+      for (const h in handles) {
+        ctx.fillRect(handles[h].x - HANDLE_SIZE/2, handles[h].y - HANDLE_SIZE/2, HANDLE_SIZE, HANDLE_SIZE);
+      }
     }
 
-    const cropCanvasEl = document.getElementById('crop-canvas');
+    function getHandles() {
+      return {
+        tl: { x: cropBox.x, y: cropBox.y },
+        tr: { x: cropBox.x + cropBox.w, y: cropBox.y },
+        bl: { x: cropBox.x, y: cropBox.y + cropBox.h },
+        br: { x: cropBox.x + cropBox.w, y: cropBox.y + cropBox.h },
+        t:  { x: cropBox.x + cropBox.w/2, y: cropBox.y },
+        b:  { x: cropBox.x + cropBox.w/2, y: cropBox.y + cropBox.h },
+        l:  { x: cropBox.x, y: cropBox.y + cropBox.h/2 },
+        r:  { x: cropBox.x + cropBox.w, y: cropBox.y + cropBox.h/2 }
+      };
+    }
 
-    cropCanvasEl.addEventListener('mousedown', (e) => {
-      isDragging = true;
-      dragStartX = e.clientX - cropOffsetX;
-      dragStartY = e.clientY - cropOffsetY;
-    });
+    const cropCanvas = document.getElementById('crop-canvas');
 
-    window.addEventListener('mousemove', (e) => {
-      if (!isDragging) return;
-      cropOffsetX = e.clientX - dragStartX;
-      cropOffsetY = e.clientY - dragStartY;
-      drawCropper();
-    });
+    function getCanvasPos(e) {
+      const rect = cropCanvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return { x: clientX - rect.left, y: clientY - rect.top };
+    }
 
-    window.addEventListener('mouseup', () => { isDragging = false; });
+    cropCanvas.addEventListener('mousedown', startCropDrag);
+    cropCanvas.addEventListener('touchstart', startCropDrag);
 
-    cropCanvasEl.addEventListener('touchstart', (e) => {
-      if (e.touches.length === 1) {
-        isDragging = true;
-        dragStartX = e.touches[0].clientX - cropOffsetX;
-        dragStartY = e.touches[0].clientY - cropOffsetY;
-      } else if (e.touches.length === 2) {
-        initialPinchDist = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
+    function startCropDrag(e) {
+      const pos = getCanvasPos(e);
+      const handles = getHandles();
+      activeHandle = null;
+
+      for (const h in handles) {
+        if (Math.hypot(pos.x - handles[h].x, pos.y - handles[h].y) <= HANDLE_SIZE * 1.2) {
+          activeHandle = h;
+          break;
+        }
       }
-    });
 
-    cropCanvasEl.addEventListener('touchmove', (e) => {
-      if (e.touches.length === 1 && isDragging) {
-        cropOffsetX = e.touches[0].clientX - dragStartX;
-        cropOffsetY = e.touches[0].clientY - dragStartY;
-        drawCropper();
-      } else if (e.touches.length === 2 && initialPinchDist) {
-        const currentDist = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-        const factor = currentDist / initialPinchDist;
-        cropScale *= factor;
-        initialPinchDist = currentDist;
-        drawCropper();
+      if (!activeHandle && pos.x >= cropBox.x && pos.x <= cropBox.x + cropBox.w && pos.y >= cropBox.y && pos.y <= cropBox.y + cropBox.h) {
+        isDraggingBox = true;
       }
-      e.preventDefault();
-    }, { passive: false });
 
-    cropCanvasEl.addEventListener('touchend', () => {
-      isDragging = false;
-      initialPinchDist = null;
-    });
+      dragStartPos = pos;
+      cropBoxStart = { ...cropBox };
+    }
 
-    cropCanvasEl.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
-      cropScale *= zoomFactor;
-      drawCropper();
-    }, { passive: false });
+    window.addEventListener('mousemove', doCropDrag);
+    window.addEventListener('touchmove', doCropDrag);
 
-    function confirmCrop() {
-      let boxW = 260;
-      let boxH = boxW / cropAspect;
-      if (boxH > 260) { boxH = 260; boxW = boxH * cropAspect; }
-      const boxX = (300 - boxW) / 2;
-      const boxY = (300 - boxH) / 2;
+    function doCropDrag(e) {
+      if (!activeHandle && !isDraggingBox) return;
+      const pos = getCanvasPos(e);
+      const dx = pos.x - dragStartPos.x;
+      const dy = pos.y - dragStartPos.y;
+
+      if (isDraggingBox) {
+        cropBox.x = Math.max(0, Math.min(340 - cropBox.w, cropBoxStart.x + dx));
+        cropBox.y = Math.max(0, Math.min(340 - cropBox.h, cropBoxStart.y + dy));
+      } else if (activeHandle) {
+        let newX = cropBoxStart.x;
+        let newY = cropBoxStart.y;
+        let newW = cropBoxStart.w;
+        let newH = cropBoxStart.h;
+
+        if (activeHandle.includes('r')) newW = Math.max(30, cropBoxStart.w + dx);
+        if (activeHandle.includes('b')) newH = Math.max(30, cropBoxStart.h + dy);
+        if (activeHandle.includes('l')) {
+          const possibleW = cropBoxStart.w - dx;
+          if (possibleW >= 30) { newX = cropBoxStart.x + dx; newW = possibleW; }
+        }
+        if (activeHandle.includes('t')) {
+          const possibleH = cropBoxStart.h - dy;
+          if (possibleH >= 30) { newY = cropBoxStart.y + dy; newH = possibleH; }
+        }
+
+        cropBox = {
+          x: Math.max(0, newX),
+          y: Math.max(0, newY),
+          w: Math.min(340 - newX, newW),
+          h: Math.min(340 - newY, newH)
+        };
+      }
+
+      drawFreeformCropper();
+    }
+
+    window.addEventListener('mouseup', endCropDrag);
+    window.addEventListener('touchend', endCropDrag);
+
+    function endCropDrag() {
+      activeHandle = null;
+      isDraggingBox = false;
+    }
+
+    function confirmFreeformCrop() {
+      const scaleX = cropImgObj.width / 340;
+      const scaleY = cropImgObj.height / 340;
+
+      const srcX = cropBox.x * scaleX;
+      const srcY = cropBox.y * scaleY;
+      const srcW = cropBox.w * scaleX;
+      const srcH = cropBox.h * scaleY;
 
       const exportCanvas = document.createElement('canvas');
-      let outW = cropTargetType === 'icon' ? 180 : 750;
-      let outH = Math.round(outW / cropAspect);
-      if (cropTargetType === 'splash') {
-        if (selectedCategoryTarget === 'ipad_port') { outW = 1536; outH = 2048; }
-        else if (selectedCategoryTarget === 'ipad_land') { outW = 2048; outH = 1536; }
-        else if (selectedCategoryTarget === 'iphone_4in') { outW = 640; outH = 1136; }
-        else if (selectedCategoryTarget === 'iphone_47in') { outW = 750; outH = 1334; }
-        else if (selectedCategoryTarget === 'iphone_55in_port') { outW = 1242; outH = 2208; }
-        else if (selectedCategoryTarget === 'iphone_55in_land') { outW = 2208; outH = 1242; }
-      }
+      exportCanvas.width = Math.round(srcW);
+      exportCanvas.height = Math.round(srcH);
 
-      exportCanvas.width = outW;
-      exportCanvas.height = outH;
-      const eCtx = exportCanvas.getContext('2d');
-      eCtx.imageSmoothingEnabled = true;
-      eCtx.imageSmoothingQuality = 'high';
-
-      const srcX = (boxX - cropOffsetX) / cropScale;
-      const srcY = (boxY - cropOffsetY) / cropScale;
-      const srcW = boxW / cropScale;
-      const srcH = boxH / cropScale;
-
-      eCtx.drawImage(cropImageObj, srcX, srcY, srcW, srcH, 0, 0, outW, outH);
+      const ctx = exportCanvas.getContext('2d');
+      ctx.drawImage(cropImgObj, srcX, srcY, srcW, srcH, 0, 0, exportCanvas.width, exportCanvas.height);
 
       const dataUrl = exportCanvas.toDataURL('image/png');
 
-      if (cropTargetType === 'icon') {
-        document.getElementById('app-icon').src = dataUrl;
-        const img = new Image();
-        img.src = dataUrl;
-        img.onload = () => { uploadedIconImage = img; };
-      } else if (cropTargetType === 'splash' && selectedCategoryTarget) {
+      if (selectedCategoryTarget) {
         document.getElementById('launch-preview-' + selectedCategoryTarget).src = dataUrl;
         const img = new Image();
-        img.src = dataUrl;
         img.onload = () => { categoryReplacements[selectedCategoryTarget] = img; };
+        img.src = dataUrl;
       }
 
       closeCropper();
+    }
+
+    async function handleInjectorUpload(event) {
+      const files = Array.from(event.target.files);
+      for (const file of files) {
+        if (file.name.endsWith('.dylib')) {
+          const buffer = await file.arrayBuffer();
+          injectionQueue.push({ type: 'dylib', name: file.name, buffer: buffer });
+        } else if (file.name.endsWith('.deb')) {
+          const buffer = await file.arrayBuffer();
+          injectionQueue.push({ type: 'deb', name: file.name, buffer: buffer });
+        }
+      }
+      renderInjectorList();
+      event.target.value = '';
+    }
+
+    function renderInjectorList() {
+      const listContainer = document.getElementById('injector-list');
+      if (injectionQueue.length === 0) {
+        listContainer.innerHTML = `<p class="text-xs font-bold text-slate-400 italic">No dylibs or debs queued for injection.</p>`;
+        return;
+      }
+
+      listContainer.innerHTML = '';
+      injectionQueue.forEach((item, index) => {
+        const row = document.createElement('div');
+        row.className = "flex items-center justify-between bg-white/90 p-3 rounded-xl border border-pink-200 shadow-sm";
+        row.innerHTML = `
+          <div class="flex items-center space-x-2">
+            <span class="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded ${item.type === 'dylib' ? 'bg-sky-100 text-sky-700' : 'bg-pink-100 text-pink-700'}">${item.type}</span>
+            <span class="text-xs font-bold text-slate-800">${item.name}</span>
+          </div>
+          <button onclick="removeInjectedItem(${index})" class="text-xs font-bold text-rose-500 hover:text-rose-700">Remove</button>
+        `;
+        listContainer.appendChild(row);
+      });
+    }
+
+    function removeInjectedItem(index) {
+      injectionQueue.splice(index, 1);
+      renderInjectorList();
     }
 
     async function handleFormSubmit(event) {
@@ -1122,35 +1069,68 @@ ${serializeValue(obj)}
       document.getElementById('loader').classList.remove('hidden');
 
       try {
-        // Update Info.plist
-        plistObj.CFBundleDisplayName = document.getElementById('display-name').value;
-        plistObj.CFBundleIdentifier = document.getElementById('bundle-identifier').value;
-        plistObj.CFBundleName = document.getElementById('bundle-name').value;
-        plistObj.CFBundleVersion = document.getElementById('bundle-version').value;
-        plistObj.CFBundleShortVersionString = document.getElementById('short-version-string').value;
-        plistObj.MinimumOSVersion = document.getElementById('min-ios-version').value;
+        if (typeof plistObj !== 'object' || plistObj === null) plistObj = {};
+
+        plistObj['CFBundleDisplayName'] = document.getElementById('display-name').value;
+        plistObj['CFBundleIdentifier'] = document.getElementById('bundle-identifier').value;
+        plistObj['CFBundleName'] = document.getElementById('bundle-name').value;
+        plistObj['CFBundleVersion'] = document.getElementById('bundle-version').value;
+        plistObj['CFBundleShortVersionString'] = document.getElementById('short-version-string').value;
+        plistObj['MinimumOSVersion'] = document.getElementById('min-ios-version').value;
+        if (mainExecName) plistObj['CFBundleExecutable'] = mainExecName;
+
+        const appPrefix = plistPath.substring(0, plistPath.lastIndexOf('Info.plist'));
+
+        if (uploadedIconImage) {
+          const mandatoryIconTargets = [
+            { name: 'AppIcon60x60@2x.png', dim: 120 },
+            { name: 'AppIcon60x60@3x.png', dim: 180 },
+            { name: 'AppIcon76x76@2x~ipad.png', dim: 152 },
+            { name: 'Icon-57.png', dim: 57 },
+            { name: 'Icon-72.png', dim: 72 },
+            { name: 'Icon-144.png', dim: 144 },
+            { name: 'Icon-512.png', dim: 512 }
+          ];
+
+          for (const target of mandatoryIconTargets) {
+            const pngBuf = await convertAndResizeImageToPngBlob(uploadedIconImage, target.dim, target.dim);
+            currentZip.file(appPrefix + target.name, pngBuf);
+          }
+
+          if (explicitIconTargetFiles.length > 0) {
+            for (const iconFile of explicitIconTargetFiles) {
+              let dim = 120;
+              if (iconFile.includes('180x180') || iconFile.includes('60x60@3x')) dim = 180;
+              else if (iconFile.includes('167x167') || iconFile.includes('83.5x83.5@2x')) dim = 167;
+              else if (iconFile.includes('152x152') || iconFile.includes('76x76@2x')) dim = 152;
+              else if (iconFile.includes('120x120') || iconFile.includes('60x60@2x')) dim = 120;
+              else if (iconFile.includes('114x114') || iconFile.includes('57x57@2x')) dim = 114;
+              else if (iconFile.includes('76x76')) dim = 76;
+              else if (iconFile.includes('57x57') || iconFile.includes('Icon.png')) dim = 57;
+
+              const pngBuffer = await convertAndResizeImageToPngBlob(uploadedIconImage, dim, dim);
+              currentZip.file(appPrefix + iconFile, pngBuffer);
+            }
+          }
+
+          plistObj['CFBundleIcons'] = {
+            'CFBundlePrimaryIcon': {
+              'CFBundleIconFiles': ['AppIcon60x60', 'Icon-57', 'Icon-72', 'Icon-144'],
+              'UIPrerenderedIcon': true
+            }
+          };
+          plistObj['CFBundleIcons~ipad'] = {
+            'CFBundlePrimaryIcon': {
+              'CFBundleIconFiles': ['AppIcon60x60', 'AppIcon76x76', 'Icon-57', 'Icon-72', 'Icon-144'],
+              'UIPrerenderedIcon': true
+            }
+          };
+          plistObj['CFBundleIconFiles'] = ['AppIcon60x60', 'Icon-57', 'Icon-72', 'Icon-144'];
+        }
 
         const updatedXmlPlist = objectToPlistXml(plistObj);
         currentZip.file(plistPath, updatedXmlPlist);
 
-        const appPrefix = plistPath.substring(0, plistPath.lastIndexOf('Info.plist'));
-
-        // Update Icons
-        if (uploadedIconImage && explicitIconTargetFiles.length > 0) {
-          for (const iconFile of explicitIconTargetFiles) {
-            let dim = 120;
-            if (iconFile.includes('152x152')) dim = 152;
-            else if (iconFile.includes('167x167')) dim = 167;
-            else if (iconFile.includes('180x180')) dim = 180;
-            else if (iconFile.includes('76x76')) dim = 76;
-            else if (iconFile.includes('57x57') || iconFile.includes('Icon.png')) dim = 57;
-
-            const blobBuffer = await resizeImageToBlob(uploadedIconImage, dim, dim);
-            currentZip.file(appPrefix + iconFile, blobBuffer);
-          }
-        }
-
-        // Update Splash Screens
         for (const catTargetId in categoryReplacements) {
           const imgObj = categoryReplacements[catTargetId];
           const matchedCategoryObj = activeCategories.find(c => c.category.id === catTargetId);
@@ -1167,27 +1147,20 @@ ${serializeValue(obj)}
               else if (catTargetId === 'iphone_55in_port') { width = 1242; height = 2208; }
               else if (catTargetId === 'iphone_55in_land') { width = 2208; height = 1242; }
 
-              const splashBuffer = await resizeImageToBlob(imgObj, width, height);
+              const splashBuffer = await convertAndResizeImageToPngBlob(imgObj, width, height);
               currentZip.file(splashItem.fullPath, splashBuffer);
             }
           }
         }
 
-        // Process Dylib & Deb Tweaks Injection
-        if (queuedTweaks.length > 0) {
-          const targetSubfolderOption = document.getElementById('inject-target-folder').value;
-          const targetPath = targetSubfolderOption === 'Frameworks' ? `${appPrefix}Frameworks/` : appPrefix;
-          const isSubstrateChecked = document.getElementById('bundle-substrate-chk').checked;
-
-          for (const tweak of queuedTweaks) {
-            currentZip.file(targetPath + tweak.name, tweak.data);
-          }
-
-          if (isSubstrateChecked) {
-            // Include CydiaSubstrate shim helper references
-            const shimManifest = JSON.stringify({ injectedHooks: queuedTweaks.map(t => t.name), timestamp: new Date().toISOString() });
-            currentZip.file(targetPath + "CydiaSubstrate.framework/Info.plist", `<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict><key>CFBundleIdentifier</key><string>com.saurik.CydiaSubstrate</string></dict></plist>`);
-            currentZip.file(targetPath + "tweaks_manifest.json", shimManifest);
+        if (injectionQueue.length > 0) {
+          const frameworksPath = appPrefix + "Frameworks/";
+          for (const item of injectionQueue) {
+            if (item.type === 'dylib') {
+              currentZip.file(frameworksPath + item.name, item.buffer);
+            } else if (item.type === 'deb') {
+              currentZip.file(frameworksPath + item.name.replace(/\.deb$/i, '.dylib'), item.buffer);
+            }
           }
         }
 
@@ -1195,14 +1168,14 @@ ${serializeValue(obj)}
         const downloadUrl = URL.createObjectURL(repackedBlob);
         const a = document.createElement('a');
         a.href = downloadUrl;
-        a.download = (plistObj.CFBundleName || "app") + "_patched.ipa";
+        a.download = (plistObj.CFBundleName || "app") + ".ipa";
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(downloadUrl);
 
         document.getElementById('loader').classList.add('hidden');
-        alert("IPA repacked with injected tweaks and downloaded successfully!");
+        alert("IPA repacked and downloaded successfully!");
       } catch (err) {
         alert("Error exporting IPA: " + err.message);
         document.getElementById('loader').classList.add('hidden');
